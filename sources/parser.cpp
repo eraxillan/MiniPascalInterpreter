@@ -7,28 +7,23 @@
 #include "lexer.h"
 #include "parser.h"
 
-using namespace std;
 using namespace MiniPascal;
 
 void
-MpParser::ERR (const MpString& text)
+MpParser::ERR (const std::string& _text)
 {
-	setTextColor (MP_COLOR_ERROR);
-	MpCout << _TEXT ("[") << m_iCurrLine << _TEXT ("] ") << _TEXT ("Syntax error: ") << text << endl;
-	setTextColor (MP_COLOR_NORMAL);
+	m_logstream.error () << "[" << m_iCurrLine << "] " << "Syntax error: " << _text << std::endl;
 
-	systemPause ();
+	std::cin.get ();
 	exit (1);
 }
 
 void
-MpParser::ERR2 (const MpString& text)
+MpParser::ERR2 (const std::string& _text)
 {
-	setTextColor(MP_COLOR_ERROR);
-	MpCout << _TEXT ("[") << m_iCurrLine << _TEXT ("] ") << _TEXT ("Semantic error: ") << text << endl;
-	setTextColor(MP_COLOR_NORMAL);
+	m_logstream.error () << "[" << m_iCurrLine << "] " << "Semantic error: " << _text << std::endl;
 
-	systemPause ();
+	std::cin.get ();
 	exit (2);
 }
 
@@ -39,25 +34,24 @@ MpParser::GC ()
 }
 
 void
-MpParser::INFO (const MpString& name) const
+MpParser::INFO (const std::string& _name) const
 {
-	// DEBUG:
-	//cout << name << " (" << CH << ")" << endl;
+	m_logstream.debug () << _name << " (" << m_sCurrLexeme << ")" << std::endl;
 }
 
 //
-// P ::= program D1; Â.
+// P ::= program D1; Ð’.
 //
 void
 MpParser::P ()
 {
-	INFO (_TEXT ("P"));
+	INFO ("P");
 
 	//
 	// "Program" keyword
 	//
 	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_PROGRAM))
-		ERR (_TEXT ("Keyword \"program\" expected."));
+		ERR ("Keyword \"program\" expected.");
 	else
 		GC ();
 
@@ -76,7 +70,7 @@ MpParser::P ()
 	//
 	if ( m_sCurrLexeme != m_lexer->getDelimiter (DELIM_PROGRAM_END) )
 	{
-		ERR (_TEXT ("\".\" expected."));
+		ERR ("\".\" expected.");
 	}
 }
 
@@ -86,10 +80,10 @@ MpParser::P ()
 void
 MpParser::D1 ()
 {
-	INFO (_TEXT ("D1"));
+	INFO ("D1");
 
 	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_VAR))
-		ERR (_TEXT ("Keyword \"var\" expected."));
+		ERR ("Keyword \"var\" expected.");
 	else
 		GC ();
 
@@ -102,17 +96,17 @@ MpParser::D1 ()
 void
 MpParser::D2 ()
 {
-	INFO (_TEXT ("D2"));
+	INFO ("D2");
 
 	if (m_validVars.find (m_sCurrLexeme) != m_validVars.end ())
-		ERR2 (_TEXT ("Duplicate identifier."));
+		ERR2 ("Duplicate identifier.");
 
 	//
 	// Mark variable as already declared
 	//
 	// DEBUG:
 	//cout << "DEBUG: "<< "Declare variable " << CH << endl;
-	m_validVars [m_sCurrLexeme] = _TEXT ("");
+	m_validVars [m_sCurrLexeme].clear ();
 	GC ();
 
 	//
@@ -129,16 +123,16 @@ MpParser::D2 ()
 	// Read the variable data type info
 	//
 	if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_TYPE))
-		ERR (_TEXT ("\":\" expected."));
+		ERR ("\":\" expected.");
 	else
 		GC ();
 
 	//
 	// Validate the variable data type
 	//
-	if ( (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_BOOL)) && (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_INT)) )
+	if ((m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_BOOL)) && (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_INT)))
 	{
-		ERR (_TEXT ("Unknown type."));
+		ERR ("Unknown type.");
 	}
 
 	//
@@ -146,7 +140,7 @@ MpParser::D2 ()
 	//
 	for (MpStringsDict::iterator i = m_validVars.begin (); i != m_validVars.end (); ++i)
 	{
-		if (i->second == _TEXT (""))
+		if (i->second.empty ())
 			i->second = m_sCurrLexeme;
 	}
 	GC ();
@@ -156,9 +150,10 @@ MpParser::D2 ()
 	//
 	if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPERATOR_END))
 	{
-		ERR (_TEXT ("\";\" expected."));
+		ERR ("\";\" expected.");
 	}
-	else GC ();
+	else
+		GC ();
 
 	//
 	// Another "var" block is present?
@@ -168,15 +163,15 @@ MpParser::D2 ()
 }
 
 //
-// Â ::= begin S {;S} end
+// Ð’ ::= begin S {;S} end
 //
 void
 MpParser::B (bool main)
 {
-	INFO (_TEXT ("B"));
+	INFO ("B");
 
 	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_BEGIN))
-		ERR (_TEXT ("Keyword \"begin\" expected."));
+		ERR ("Keyword \"begin\" expected.");
 	else
 		GC ();
 
@@ -190,13 +185,13 @@ MpParser::B (bool main)
 			break;
 
 		if (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
-			ERR (_TEXT ("\"(\" expected."));
+			ERR ("\"(\" expected.");
 
 		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPERATOR_END))
 		{
 			// DEBUG:
 			//cout << "DEBUG: " << "In B (), CH = " << CH << endl;
-			ERR (_TEXT ("\";\" expected."));
+			ERR ("\";\" expected");
 		}
 		else
 			GC ();
@@ -206,7 +201,7 @@ MpParser::B (bool main)
 	}
 
 	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_END))
-		ERR (_TEXT ("Keyword \"end\" expected."));
+		ERR ("Keyword \"end\" expected");
 
 	GC ();
 }
@@ -217,7 +212,7 @@ MpParser::B (bool main)
 void
 MpParser::S ()
 {
-	INFO (_TEXT ("S"));
+	INFO ("S");
 
 	//
 	// Syntax: if E then S else S
@@ -230,13 +225,13 @@ MpParser::S ()
 		//
 		// Check data type: only bool variable can be used in "if"
 		//
-		MpString t = m_exprOpType.top ();
+		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
 		if (t != m_lexer->getKeyword (KEYWORD_BOOL))
-			ERR2 (_TEXT ("if statement require bool expression."));
+			ERR2 ("if statement require bool expression");
 
 		if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_THEN))
-			ERR (_TEXT ("Keyword \"then\" expected."));
+			ERR ("Keyword \"then\" expected");
 		else
 			GC ();
 
@@ -246,7 +241,7 @@ MpParser::S ()
 			return;
 
 		if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_ELSE))
-			ERR (_TEXT ("Keyword \"else\" or \";\" expected."));
+			ERR ("Keyword \"else\" or \";\" expected");
 		else
 			GC ();
 
@@ -264,7 +259,7 @@ MpParser::S ()
 		GC ();
 
 		if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_WHILE))
-			ERR (_TEXT ("Keyword \"while\" expected."));
+			ERR ("Keyword \"while\" expected");
 		else
 			GC ();
 
@@ -273,10 +268,10 @@ MpParser::S ()
 		//
 		// Check data type: only bool variable can be used in "while"
 		//
-		MpString t = m_exprOpType.top ();
+		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
 		if (t != m_lexer->getKeyword (KEYWORD_BOOL))
-			ERR2 (_TEXT ("while statement require bool expression."));
+			ERR2 ("while statement require bool expression.");
 
 		return;
 	}
@@ -297,14 +292,14 @@ MpParser::S ()
 	{
 		GC ();
 		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPEN_BRACKET) )
-			ERR (_TEXT ("\"(\" expected."));
+			ERR ("\"(\" expected");
 		else
 			GC ();
 
 		I ();
 
 		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
-			ERR (_TEXT ("\")\" expected."));
+			ERR ("\")\" expected.");
 		else
 			GC ();
 
@@ -319,14 +314,14 @@ MpParser::S ()
 		GC ();
 
 		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPEN_BRACKET))
-			ERR (_TEXT ("\"(\" expected."));
+			ERR ("\"(\" expected.");
 		else
 			GC ();
 
 		E ();
 
 		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
-			ERR (_TEXT ("\")\" expected."));
+			ERR ("\")\" expected.");
 		else
 			GC ();
 
@@ -338,7 +333,7 @@ MpParser::S ()
 	// Check identifier: it must be declared earlier in "var" block
 	//
 	if (m_validVars.find (m_sCurrLexeme) == m_validVars.end ())
-		ERR2 (_TEXT ("Unknown identifier."));
+		ERR2 ("Unknown identifier");
 
 	I ();
 
@@ -346,7 +341,7 @@ MpParser::S ()
 	// Check for ":="
 	//
 	if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_ASSUME) )
-		ERR (_TEXT ("\":=\" expected."));
+		ERR ("\":=\" expected");
 	else
 		GC ();
 
@@ -355,13 +350,13 @@ MpParser::S ()
 	//
 	// Check for types mismatch
 	//
-	MpString t1, t2;
+	std::string t1, t2;
 	t1 = m_exprOpType.top ();
 	m_exprOpType.pop ();
 	t2 = m_exprOpType.top ();
 	m_exprOpType.pop ();
 	if (t1 != t2)
-		ERR2 (_TEXT ("Type mismatch in assign operator."));
+		ERR2 ("Type mismatch in assign operator");
 }
 
 //
@@ -370,7 +365,7 @@ MpParser::S ()
 void
 MpParser::E ()
 {
-	INFO (_TEXT ("E"));
+	INFO ("E");
 
 	E1 ();
 
@@ -386,7 +381,7 @@ MpParser::E ()
 		//
 		// Pop type1, type2, op and push typeResult
 		//
-		MpString t1, t2, op;
+		std::string t1, t2, op;
 		t1 = m_exprOpType.top ();
 		m_exprOpType.pop ();
 		op = m_exprOpType.top ();
@@ -400,7 +395,7 @@ MpParser::E ()
 		if (t1 == t2)
 			m_exprOpType.push (m_opTypes [op].typeResult);
 		else
-			ERR2 (_TEXT ("Type mismatch: operation ") + op + _TEXT (" need equal types."));
+			ERR2 ("Type mismatch: operation " + op + " need equal types.");
 
 		return;
 	}
@@ -412,10 +407,11 @@ MpParser::E ()
 void
 MpParser::E1 ()
 {
-	INFO (_TEXT ("E1"));
+	INFO ("E1");
 	T ();
 
-	if ((m_sCurrLexeme == m_lexer->getDelimiter (DELIM_PLUS) ) || (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MINUS)))
+	if ((m_sCurrLexeme == m_lexer->getDelimiter (DELIM_PLUS))
+		|| (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MINUS)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -451,10 +447,11 @@ MpParser::E1 ()
 void
 MpParser::T ()
 {
-	INFO (_TEXT ("T"));
+	INFO ("T");
 	F ();
 
-	if ( (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MUL)) || (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_DIV)))
+	if ( (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MUL))
+		|| (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_DIV)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -481,7 +478,7 @@ MpParser::T ()
 void
 MpParser::F ()
 {
-	INFO (_TEXT ("F"));
+	INFO ("F");
 
 	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_NOT))
 	{
@@ -490,10 +487,10 @@ MpParser::F ()
 		GC ();
 		F ();
 
-		MpString t = m_exprOpType.top ();
+		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
 		if (t != m_lexer->getKeyword (KEYWORD_BOOL))
-			ERR2 (_TEXT ("not operator needs bool operand."));
+			ERR2 ("not operator needs bool operand");
 		//
 		// Remove "not" from stack
 		//
@@ -516,10 +513,10 @@ MpParser::F ()
 		//
 		// Check types
 		//
-		MpString t = m_exprOpType.top ();
+		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
 		if (t != m_lexer->getKeyword (KEYWORD_INT))
-			ERR2 (_TEXT ("un operator needs int operand."));
+			ERR2 ("un operator needs int operand");
 		//
 		// Remove "un" from stack
 		//
@@ -538,7 +535,7 @@ MpParser::F ()
 		E ();
 
 		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
-			ERR (_TEXT ("\")\" expected."));
+			ERR ("\")\" expected");
 		else
 			GC ();
 
@@ -566,12 +563,12 @@ MpParser::F ()
 void
 MpParser::L ()
 {
-	INFO (_TEXT ("L"));
+	INFO ("L");
 
 	m_exprOpType.push (m_lexer->getKeyword (KEYWORD_BOOL));
 
 	if ((m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_TRUE)) && (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_FALSE)))
-		ERR (_TEXT ("Type mismatch."));
+		ERR ("Type mismatch");
 	else
 		GC ();
 }
@@ -582,16 +579,16 @@ MpParser::L ()
 void
 MpParser::I ()
 {
-	INFO (_TEXT ("I"));
+	INFO ("I");
 
 	// DEBUG:
 	//cout << "DEBUG: " << "CH = " << CH << endl;
 
 	if (m_letters.find (m_sCurrLexeme [0]) == m_letters.end ())
-		ERR (_TEXT ("Invalid identifier."));
+		ERR ("Invalid identifier");
 
 	if (m_validVars.find (m_sCurrLexeme) == m_validVars.end ())
-		ERR (_TEXT ("Unknown identifier."));
+		ERR ("Unknown identifier");
 	else
 	{
 		m_exprOpType.push (m_validVars [m_sCurrLexeme]);
@@ -609,16 +606,16 @@ MpParser::I ()
 void
 MpParser::N ()
 {
-	INFO (_TEXT ("N"));
+	INFO ("N");
 
 	m_exprOpType.push (m_lexer->getKeyword (KEYWORD_INT));
 
 	int num;
-	MpStringStream ss;
+	std::stringstream ss;
 	ss << m_sCurrLexeme;
 	ss >> num;
 	if (ss.fail () || !ss.eof ())
-		ERR (_TEXT ("Invalid number"));
+		ERR ("Invalid number");
 	else
 		GC ();
 }
@@ -629,7 +626,7 @@ MpParser::checkTypes ()
 	//
 	// Pop type1, type2, op and push typeResult
 	//
-	MpString t1, t2, op;
+	std::string t1, t2, op;
 	t1 = m_exprOpType.top ();
 	m_exprOpType.pop ();
 	op = m_exprOpType.top ();
@@ -643,14 +640,14 @@ MpParser::checkTypes ()
 	if ( (t1 == m_opTypes [op].type1) && (t2 ==  m_opTypes [op].type2) )
 		m_exprOpType.push (m_opTypes [op].typeResult);
 	else
-		ERR2 (_TEXT ("Type mismatch: operation ") + op
-		+ _TEXT (" need types ") + m_opTypes [op].type1
-		+ _TEXT (" and ") + m_opTypes [op].type2);
+		ERR2 ("Type mismatch: operation " + op
+		+ " need types " + m_opTypes [op].type1
+		+ " and " + m_opTypes [op].type2);
 }
 
-MpParser::MpParser (MpLexer* pLex)
+MpParser::MpParser (MpLexer* _lexer, Poco::LogStream& _ls) : m_logstream (_ls)
 {
-	m_lexer = pLex;
+	m_lexer = _lexer;
 	m_lexer->setToBegin ();
 	m_iCurrLine = 0;
 
@@ -658,7 +655,7 @@ MpParser::MpParser (MpLexer* pLex)
 	for (i = 0; i <= 9; i ++)
 		m_digits.insert (i);
 
-	MpString ls = _TEXT ("abcdefghijklmnopqrstuvwxyz");
+	std::string ls = "abcdefghijklmnopqrstuvwxyz";
 	for (i = 0; i < ls.length (); i ++)
 		m_letters.insert (ls [i]);
 
@@ -670,10 +667,10 @@ MpParser::MpParser (MpLexer* pLex)
 	//
 	// :=
 	//
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
-	opt.typeResult = _TEXT ("");
+	opt.typeResult.clear ();
 	m_opTypes [m_lexer->getDelimiter (DELIM_ASSUME)] = opt;
 
 	//
@@ -721,38 +718,38 @@ MpParser::MpParser (MpLexer* pLex)
 	//
 	// Compare operators
 	//
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
 	opt.typeResult = m_lexer->getKeyword (KEYWORD_BOOL);
 	m_opTypes [m_lexer->getDelimiter (DELIM_EQUAL)] = opt;
 
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
 	opt.typeResult = m_lexer->getKeyword (KEYWORD_BOOL);
 	m_opTypes [m_lexer->getDelimiter (DELIM_NOT_EQUAL)] = opt;
 
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
 	opt.typeResult = m_lexer->getKeyword (KEYWORD_BOOL);
 	m_opTypes [m_lexer->getDelimiter (DELIM_MORE)] = opt;
 
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
 	opt.typeResult = m_lexer->getKeyword (KEYWORD_BOOL);
 	m_opTypes [m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL)] = opt;
 
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
 	opt.typeResult = m_lexer->getKeyword (KEYWORD_BOOL);
 	m_opTypes [m_lexer->getDelimiter (DELIM_LESSER)] = opt;
 
-	opt.type1 = _TEXT ("");
-	opt.type2 = _TEXT ("");
+	opt.type1.clear ();
+	opt.type2.clear ();
 	opt.equal = true;
 	opt.typeResult = m_lexer->getKeyword (KEYWORD_BOOL);
 	m_opTypes [m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL)] = opt;
@@ -782,7 +779,7 @@ MpParser::parse ()
 	//
 	// No syntax errors! (In other case program exit)
 	//
-	MpCout << _TEXT ("PARSER INFO: No syntax error found!") << endl;
+	m_logstream.debug () << "PARSER INFO: No syntax error found!" << std::endl;
 
 	//
 	// Check for unused variables
@@ -790,17 +787,15 @@ MpParser::parse ()
 	int warningCount = 0;
 	for (MpStringsDict::iterator i = m_validVars.begin (); i != m_validVars.end (); ++i)
 	{
-		if ( m_usedVars.find (i->first) == m_usedVars.end () )
+		if (m_usedVars.find (i->first) == m_usedVars.end ())
 		{
-			setTextColor(MP_COLOR_WARNING);
-			MpCout << _TEXT ("SEMLER WARNING: ") << i->first << _TEXT (" unreferenced local variable.") << endl;
-			setTextColor(MP_COLOR_NORMAL);
+			m_logstream.warning () << "SEMLER WARNING: " << i->first << " unreferenced local variable" << std::endl;
 			warningCount ++;
 		}
 	}
 
 	if (warningCount)
-		MpCout << _TEXT ("SEMLER INFO: No errors, ") << warningCount << _TEXT (" warnings.") << endl;
+		m_logstream.debug () << "SEMLER INFO: No errors, " << warningCount << " warnings" << std::endl;
 	else
-		MpCout << _TEXT ("SEMLER INFO: No errors, no warnings.") << endl;
+		m_logstream.debug () << "SEMLER INFO: No errors, no warnings." << std::endl;
 }

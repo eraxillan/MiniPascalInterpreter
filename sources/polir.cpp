@@ -9,45 +9,46 @@ using namespace std;
 using namespace MiniPascal;
 
 //
-// Convert expression(s) to POLIR (Edsger Wybe Dijkstra algorithm) and execute it.
-// DOES NOT CHECK SYNTAX AND SEMANTIC!
+// Convert expression(s) to POLIR (Edsger Wybe Dijkstra algorithm) and execute it
+//
+// NOTE: does not check syntax and semantics, this should be done by the MpParser object
 //
 
 //
 // Class constructor: fills priorities table and connect to MpLexer and MpParser objects
 //
-MpPolir::MpPolir (MpLexer * pLex, MpParser * pPsr)
+MpPolir::MpPolir (MpLexer* _lexer, MpParser* _parser, Poco::LogStream& _logstream) : m_logstream (_logstream)
 {
-	connectLexer (pLex);
-	connectParser (pPsr);
+	connectLexer (_lexer);
+	connectParser (_parser);
 
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_OPEN_BRACKET),    0));
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_CLOSE_BRACKET),   1));
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_OPEN_BRACKET),    0));
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_CLOSE_BRACKET),   1));
 
 	//
 	// Fill operations priority table
 	//
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_ASSUME),          2));
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (KEYWORD_OR),            3));
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (KEYWORD_AND),           4));
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (KEYWORD_NOT),           5));
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_LESSER),          6));  // <
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL), 6));  // <=
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_MORE),            6));  // >
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL),   6));  // >=
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_EQUAL),           6));  // =
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_NOT_EQUAL),       6));  // <>
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_PLUS),            7));    // +
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_MINUS),           7));    // -
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_MUL),             8));    // *
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (DELIM_DIV),             8));    // /
-	m_opPriors.insert(std::make_pair(m_lexer->getDelimiter (KEYWORD_UN),            9));    // unary -
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_ASSUME),          2));
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (KEYWORD_OR),            3));
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (KEYWORD_AND),           4));
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (KEYWORD_NOT),           5));
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_LESSER),          6));  // <
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL), 6));  // <=
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_MORE),            6));  // >
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL),   6));  // >=
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_EQUAL),           6));  // =
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_NOT_EQUAL),       6));  // <>
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_PLUS),            7));  // +
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_MINUS),           7));  // -
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_MUL),             8));  // *
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (DELIM_DIV),             8));  // /
+	m_opPriors.insert (std::make_pair (m_lexer->getDelimiter (KEYWORD_UN),            9));  // unary -
 }
 
 //
 // Return operation priority
 //
-int MpPolir::priority (MpString op) const
+int MpPolir::priority (const std::string& op) const
 {
 	PriorityMap::const_iterator iOp = m_opPriors.find(op);
 	return (iOp != m_opPriors.end()) ? iOp->second : -1;
@@ -84,14 +85,14 @@ MpPolir::connectParser (MpParser * pPar)
 }
 
 void
-MpPolir::convertExpression (const MpString& startL, bool* bIsConst)
+MpPolir::convertExpression (const std::string& startL, bool* bIsConst)
 {
-	MpString lexeme = startL;
+	std::string lexeme = startL;
 
 	//
 	// What lexemes are the expression end markers?
 	//
-	set < MpString, less<MpString> > endDelims;
+	set <std::string, less<std::string>> endDelims;
 	endDelims.insert (m_lexer->getKeyword (KEYWORD_WHILE));
 	endDelims.insert (m_lexer->getKeyword (KEYWORD_THEN));
 	endDelims.insert (m_lexer->getKeyword (KEYWORD_ELSE));
@@ -123,7 +124,7 @@ MpPolir::convertExpression (const MpString& startL, bool* bIsConst)
 		//
 		// If ID or number (bool are stored as 0 or 1, but lexeme is 'true' or 'false')
 		//
-		if ((MpIsAlNum (lexeme [0]) || lexeme [0] == _TEXT('-')) && (m_opPriors.find (lexeme) == m_opPriors.end ()))
+		if ((isalnum (lexeme [0]) || lexeme [0] == '-') && (m_opPriors.find (lexeme) == m_opPriors.end ()))
 		{
 			m_polirExpr.push_back (lexeme);
 
@@ -132,7 +133,7 @@ MpPolir::convertExpression (const MpString& startL, bool* bIsConst)
 			//
 			if (bIsConst)
 			{
-				if (MpIsAl (lexeme [0]) && (lexeme != _TEXT("true")) && (lexeme != _TEXT("false")))
+				if (isalpha (lexeme [0]) && (lexeme != "true") && (lexeme != "false"))
 					*bIsConst = false;
 			}
 		}
@@ -181,14 +182,14 @@ MpPolir::convertExpression (const MpString& startL, bool* bIsConst)
 }
 
 void
-MpPolir::convert (const MpString & lexeme)
+MpPolir::convert (const std::string& lexeme)
 {
 	//
 	// Check for type - arithmetic expression or complex such as if
 	//
 	char type = 0;
 
-	MpString l = lexeme;
+	std::string l = lexeme;
 	if (l == m_lexer->getKeyword (KEYWORD_IF))
 		type = 1;
 	if (l == m_lexer->getKeyword (KEYWORD_DO))
@@ -217,17 +218,12 @@ MpPolir::convert (const MpString & lexeme)
 			//convert (l);                      // E until then.
 			bool b;
 			convertExpression (l, &b);
-			if ( b )
-			{
-				setTextColor(MP_COLOR_WARNING);
-				MpCout << _TEXT("POLIR WARNING: In \"if\" operator, line ")
-					<< lineIndex << _TEXT (", constant condition was found.") << endl;
-				setTextColor(MP_COLOR_NORMAL);
-			}
+			if (b)
+				m_logstream.warning () << "POLIR WARNING: In \"if\" operator, line " << lineIndex << ", constant condition was found." << std::endl;
 
-			m_polirExpr.push_back (_TEXT ("_"));             // p1 !F - p1 defines later.
+			m_polirExpr.push_back ("_");             // p1 !F - p1 will be defined later
 			p1Index = m_polirExpr.size () - 1;
-			m_polirExpr.push_back (_TEXT ("!F"));
+			m_polirExpr.push_back ("!F");
 
 			l = m_lexer->getNextLexeme (NULL);
 			convert (l);                                  // S1 until else OR ;.
@@ -236,9 +232,9 @@ MpPolir::convert (const MpString & lexeme)
 
 			if (l == m_lexer->getKeyword (KEYWORD_ELSE))
 			{
-				m_polirExpr.push_back (_TEXT ("_"));         // p2 is now unknown.
+				m_polirExpr.push_back ("_");         // p2 is now unknown.
 				size_t p2Index = m_polirExpr.size () - 1;
-				m_polirExpr.push_back (_TEXT ("!"));
+				m_polirExpr.push_back ("!");
 
 				l = m_lexer->getNextLexeme (NULL);
 				p1 = m_polirExpr.size ();
@@ -249,9 +245,9 @@ MpPolir::convert (const MpString & lexeme)
 				//
 				// Update indexes
 				//
-				MpStringStream ss;
-				MpString s1, s2;
-				ss << p1 << _TEXT (" ") << p2;
+				std::stringstream ss;
+				std::string s1, s2;
+				ss << p1 << " " << p2;
 				ss >> s1 >> s2;
 				m_polirExpr [p1Index] = s1;
 				m_polirExpr [p2Index] = s2;
@@ -263,8 +259,8 @@ MpPolir::convert (const MpString & lexeme)
 				//
 				// Update index
 				//
-				MpStringStream ss;
-				MpString s1;
+				std::stringstream ss;
+				std::string s1;
 				ss << p1;
 				ss >> s1;
 				m_polirExpr [p1Index] = s1;
@@ -284,22 +280,17 @@ MpPolir::convert (const MpString & lexeme)
 			//convert (l);                     // E until ;.
 			bool b;
 			convertExpression (l, &b);
-			if ( b )
-			{
-				setTextColor(MP_COLOR_WARNING);
-				MpCout << _TEXT ("POLIR WARNING: In \"do\" operator, line ")
-					   << lineIndex << _TEXT (", constant condition was found.") << endl;
-				setTextColor(MP_COLOR_NORMAL);
-			}
+			if (b)
+				m_logstream.warning () << "POLIR WARNING: In \"do\" operator, line " << lineIndex << ", constant condition was found." << std::endl;
 
 			m_polirExpr.push_back (m_lexer->getKeyword (KEYWORD_NOT));
 
-			MpStringStream ss;
-			MpString s1;
-			ss << p1 << _TEXT (" ");
+			std::stringstream ss;
+			std::string s1;
+			ss << p1 << " ";
 			ss >> s1;
 			m_polirExpr.push_back (s1);
-			m_polirExpr.push_back (_TEXT ("!F"));
+			m_polirExpr.push_back ("!F");
 			break;
 		}
 		case 3: // read (I);
@@ -332,7 +323,7 @@ MpPolir::convert (const MpString & lexeme)
 				convert (l);
 				// DEBUG:
 				//cout << " l = " << l << endl;
-			} while (((l = m_lexer->getNextLexeme (NULL)) != m_lexer->getKeyword (KEYWORD_END)) && (l != _TEXT ("")));
+			} while (((l = m_lexer->getNextLexeme (NULL)) != m_lexer->getKeyword (KEYWORD_END)) && (!l.empty ()));
 			m_lexer->getNextLexeme (NULL);
 			break;
 		}
@@ -357,7 +348,7 @@ MpPolir::convertProgram ()
 	//
 	// Search for code block
 	//
-	MpString l;
+	std::string l;
 	while ((l = m_lexer->getNextLexeme (NULL) ) != m_lexer->getKeyword (KEYWORD_BEGIN));
 	//
 	// Now l points to code block begin
@@ -369,12 +360,12 @@ MpPolir::convertProgram ()
 	do
 	{
 		convert (l);
-	} while ((l = m_lexer->getNextLexeme (0)) != _TEXT (""));
+	} while (!(l = m_lexer->getNextLexeme (0)).empty ());
 
-	MpCout << _TEXT ("POLIR: Convertion done, no errors.") << endl;
+	m_logstream.debug () << "POLIR: Convertion done, no errors" << std::endl;
 	for (std::size_t i = 0; i < m_polirExpr.size (); i ++)
-		MpCout << m_polirExpr [i] << _TEXT (" ");
-	MpCout << endl;
+		m_logstream.debug () << m_polirExpr [i] << " ";
+	m_logstream.debug () << endl;
 }
 
 namespace
@@ -383,9 +374,9 @@ namespace
 	// Converts MpString to integer - return 0 if s isn't number
 	//
 	static int
-	stringToInt (const MpString& s)
+	stringToInt (const std::string& s)
 	{
-		MpStringStream ss;
+		std::stringstream ss;
 		ss << s;
 		int i = 0;
 		ss >> i;
@@ -395,11 +386,11 @@ namespace
 	//
 	// Converts integer to MpString
 	//
-	static MpString
+	static std::string
 	intToString (const int i)
 	{
-		MpStringStream ss;
-		MpString s;
+		std::stringstream ss;
+		std::string s;
 		ss << i;
 		ss >> s;
 		return s;
@@ -412,22 +403,22 @@ MpPolir::executeProgram ()
 	//
 	// Operands stack: contain integer/boolean constants and integer/boolean variables
 	//
-	stack <MpString> varStack;
+	stack <std::string> varStack;
 
 	unsigned int i = 0;
 	while (i < m_polirExpr.size ())
 	{
-		if (m_polirExpr [i] == _TEXT ("!F"))
+		if (m_polirExpr [i] == "!F")
 		{
 			//
 			// bool_const index !F
 			//
-			MpString sIndex = varStack.top ();         // index
+			std::string sIndex = varStack.top ();         // index
 			varStack.pop ();
-			MpString condition = varStack.top ();      // condition
+			std::string condition = varStack.top ();      // condition
 			varStack.pop ();
 
-			if ((condition != m_lexer->getKeyword (KEYWORD_FALSE)) && (condition != _TEXT ("0")))
+			if ((condition != m_lexer->getKeyword (KEYWORD_FALSE)) && (condition != "0"))
 			{
 				i ++;
 				continue;
@@ -437,12 +428,12 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
-		if (m_polirExpr [i] == _TEXT ("!"))
+		if (m_polirExpr [i] == "!")
 		{
 			//
 			// index !
 			//
-			MpString sIndex = varStack.top ();
+			std::string sIndex = varStack.top ();
 			varStack.pop ();
 
 			i = stringToInt (sIndex);
@@ -459,23 +450,23 @@ MpPolir::executeProgram ()
 			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_DIV)))
 		{
 			int x, y;
-			MpString sY = varStack.top ();
+			std::string sY = varStack.top ();
 			varStack.pop ();
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if (MpIsDigit (sX [0]) || sX [0] == _TEXT ('-'))
+			if (isdigit (sX [0]) || sX [0] == '-')
 				x = stringToInt (sX);
 			else
 				x = m_vars [sX].value;
 
-			if (MpIsDigit (sY [0]) || sY [0] == _TEXT ('-'))
+			if (isdigit (sY [0]) || sY [0] == '-')
 				y = stringToInt (sY);
 			else
 				y = m_vars [sY].value;
 
 			int result = 0;
-			MpString sResult;
+			std::string sResult;
 
 			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_PLUS))
 			{
@@ -508,10 +499,8 @@ MpPolir::executeProgram ()
 				//
 				if (!y)
 				{
-					setTextColor(MP_COLOR_ERROR);
-					MpCout << _TEXT ("RUNTIME ERROR: divide by null.") << endl;
-					setTextColor(MP_COLOR_NORMAL);
-					system ("pause");
+					m_logstream << "RUNTIME ERROR: divide by zero" << std::endl;
+					std::cin.get ();
 					exit (3);
 				}
 
@@ -530,31 +519,31 @@ MpPolir::executeProgram ()
 		if ((m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_AND)) || (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_OR)))
 		{
 			int x, y;
-			MpString sY = varStack.top ();
+			std::string sY = varStack.top ();
 			varStack.pop ();
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if ((sX == _TEXT ("0")) || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sX == "0") || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
 				x = 0;
 			else
-				if ((sX == _TEXT ("1")) || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
+				if ((sX == "1") || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
 					x = 1;
 				else
 					x = m_vars [sX].value;
 
-			if ((sY == _TEXT ("0")) || (sY == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sY == "0") || (sY == m_lexer->getKeyword (KEYWORD_FALSE)))
 				y = 0;
 			else
 			{
-				if ((sY == _TEXT ("1")) || (sY == m_lexer->getKeyword (KEYWORD_TRUE)))
+				if ((sY == "1") || (sY == m_lexer->getKeyword (KEYWORD_TRUE)))
 					y = 1;
 				else
 					y = m_vars [sY].value;
 			}
 
 			int result = 0;
-			MpString sResult;
+			std::string sResult;
 
 			if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_AND))
 			{
@@ -585,16 +574,16 @@ MpPolir::executeProgram ()
 		{
 			// x un
 			int x;
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if (MpIsDigit (sX [0]) || sX [0] == _TEXT ('-'))
+			if (isdigit (sX [0]) || sX [0] == '-')
 				x = stringToInt (sX);
 			else
 				x = m_vars [sX].value;
 
 			int result = x * (-1);
-			MpString sResult = intToString (result);
+			std::string sResult = intToString (result);
 			varStack.push (sResult);
 
 			i ++;
@@ -607,21 +596,21 @@ MpPolir::executeProgram ()
 			// x not
 			//
 			int x;
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if ((sX == _TEXT ("0")) || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sX == "0") || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
 				x = 0;
 			else
 			{
-				if ((sX == _TEXT ("1")) || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
+				if ((sX == "1") || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
 					x = 1;
 				else
 					x = m_vars [sX].value;
 			}
 
 			int result = ! x;
-			MpString sResult = intToString (result);
+			std::string sResult = intToString (result);
 			varStack.push (sResult);
 
 			i ++;
@@ -637,33 +626,33 @@ MpPolir::executeProgram ()
 		{
 			int x = 0, y = 0, result = 0;
 
-			MpString sY = varStack.top ();
+			std::string sY = varStack.top ();
 			varStack.pop ();
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 
 			//
 			// x, y can be any - const or var, bool or int
 			//
-			if ((sX == _TEXT ("0")) || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sX == "0") || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
 				x = 0;
-			else if ((sX == _TEXT ("1")) || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
+			else if ((sX == "1") || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
 				x = 1;
 			else
 			{
-				if (MpIsDigit (sX [0]) || (sX [0] == _TEXT ('-')))
+				if (isdigit (sX [0]) || (sX [0] == '-'))
 					x = stringToInt (sX);
 				else
 					x = m_vars [sX].value;
 			}
 
-			if ((sY == _TEXT ("0")) || (sY == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sY == "0") || (sY == m_lexer->getKeyword (KEYWORD_FALSE)))
 				y = 0;
-			else if ((sY == _TEXT ("1")) || (sY == m_lexer->getKeyword (KEYWORD_TRUE)))
+			else if ((sY == "1") || (sY == m_lexer->getKeyword (KEYWORD_TRUE)))
 				y = 1;
 			else
 			{
-				if (MpIsDigit (sY [0]) || (sY [0] == _TEXT ('-')))
+				if (isdigit (sY [0]) || (sY [0] == '-'))
 					y = stringToInt (sY);
 				else
 					y = m_vars [sY].value;
@@ -712,35 +701,36 @@ MpPolir::executeProgram ()
 				result = (x >= y);
 			}
 
-			MpString sResult = intToString (result);
+			std::string sResult = intToString (result);
 			varStack.push (sResult);
 			i ++;
 			continue;
 		}
 
+		// FIXME: replace std::cin with Poco::BinaryStream of smth with UTF-8 support
 		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_READ))
 		{
 			//
 			// id read
 			//
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			MpString sIn;
-			MpCout << _TEXT ("read: enter ") << sX << _TEXT (" : ");
-			MpCin >> sIn;
+			std::string sIn;
+			m_logstream.debug () << "read: enter " << sX << " : " << std::endl;
+			std::cin >> sIn;
 
 			//
 			// Convert to lower case one
 			//
-			toLower (sIn);
+			Poco::UTF8::toLowerInPlace (sIn);
 
 			//
 			// Update value
 			//
 			if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL))
 			{
-				if ((sIn == m_lexer->getKeyword (KEYWORD_FALSE)) || (sIn == _TEXT ("0")))
+				if ((sIn == m_lexer->getKeyword (KEYWORD_FALSE)) || (sIn == "0"))
 					m_vars [sX].value = 0;
 				else
 					m_vars [sX].value = 1;
@@ -753,27 +743,28 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
+		// FIXME: replace Poco::LogStream to some std::cout-like stream with UTF-8
 		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_WRITE))
 		{
 			//
 			// id || const write
 			//
-			MpString sX = varStack.top ();
+			std::string sX = varStack.top ();
 			varStack.pop ();
 			if (m_vars.find (sX) != m_vars.end ())
 			{
-				if ( m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL) )
+				if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL))
 				{
-					if ( m_vars [sX].value )
-						MpCout << _TEXT ("write: ") << _TEXT ("true") << endl;
+					if (m_vars [sX].value)
+						m_logstream.debug () << "write: " << "true" << std::endl;
 					else
-						MpCout << _TEXT ("write: ") << _TEXT ("false") << endl;
+						m_logstream.debug () << "write: " << "false" << std::endl;
 				}
 				else
-					MpCout << _TEXT ("write: ") << m_vars [sX].value << endl;
+					m_logstream.debug () << "write: " << m_vars [sX].value << std::endl;
 			}
 			else
-				MpCout << _TEXT ("write: ") << sX << endl;
+				m_logstream.debug () << "write: " << sX << std::endl;
 
 			i ++;
 			continue;
@@ -785,9 +776,9 @@ MpPolir::executeProgram ()
 			// We haven't any result, just update variable value
 			// id const :=
 			//
-			MpString s1 = varStack.top (); // Value.
+			std::string s1 = varStack.top (); // Value.
 			varStack.pop ();
-			MpString s2 = varStack.top (); // Variable.
+			std::string s2 = varStack.top (); // Variable.
 			varStack.pop ();
 
 			//
@@ -797,7 +788,7 @@ MpPolir::executeProgram ()
 				m_vars [s2].value = 0;
 			if (s1 == m_lexer->getKeyword (KEYWORD_TRUE))
 				m_vars [s2].value = 1;
-			if (MpIsDigit (s1 [0]) || s1 [0] == _TEXT ('-'))
+			if (isdigit (s1 [0]) || s1 [0] == '-')
 			{
 				m_vars [s2].value = stringToInt (s1);
 
@@ -821,31 +812,25 @@ MpPolir::executeProgram ()
 		}
 	}
 
-	MpCout << _TEXT ("POLIR: Executing done! No errors found.") << endl;
+	m_logstream.debug () << "POLIR: Executing done! No errors found" << std::endl;
 }
 
 bool
-MpPolir::saveToFile (const MpChar* fileName)
+MpPolir::saveToFile (const std::string& _file_name)
 {
-	MpOutputFileStream f (fileName);
-	if (!f)
-	{
-		MpCout << _TEXT ("POLIR: IO error, could not open file for write.") << endl;
-		return false;
-	}
-
 	try
 	{
-		for (unsigned int i = 0; i < m_polirExpr.size (); i ++)
-			MpCout << m_polirExpr [i] << _TEXT (" ");
-		MpCout << endl;
+		Poco::FileOutputStream f (_file_name);
+
+		for (unsigned int i = 0; i < m_polirExpr.size (); i++)
+			m_logstream.debug () << m_polirExpr [i] << " ";
+		m_logstream.debug () << std::endl;
 	}
 	catch (...)
 	{
-		MpCout << _TEXT ("POLIR: IO error, could not write to file.") << endl;
+		m_logstream.error () << "POLIR: I/O error, could not open file " << _file_name << " in the write mode" << std::endl;
 		return false;
 	}
-	f.close ();
 
 	return true;
 }

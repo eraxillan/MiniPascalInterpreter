@@ -7,10 +7,13 @@
 #ifndef __MINIPASCAL_PARSER_H
 #define __MINIPASCAL_PARSER_H
 
+#include "types.h"
 #include "lexer.h"
 
 namespace MiniPascal
 {
+	// FIXME: replace parsing procedure names to more clear ones :)
+
 	/**
 	  * @brief Simple syntax analyzer: split lexemes to the sequence of operations
 	  * under variables and constants
@@ -26,7 +29,7 @@ namespace MiniPascal
 		/**
 	      * @brief Current lexeme
 	      */
-		MpString m_sCurrLexeme;
+		std::string m_sCurrLexeme;
 
 		/**
 	      * @brief Current line index
@@ -46,7 +49,7 @@ namespace MiniPascal
 		/**
 	      * @brief Expression operands and their types stack
 	      */
-		std::stack <MpString> m_exprOpType;
+		std::stack <std::string> m_exprOpType;
 
 		/**
 	      * @brief Valid data types
@@ -63,12 +66,12 @@ namespace MiniPascal
 		/**
 	      * @brief Prints syntax error and shutdown the program.
 	      */
-		void ERR (const MpString& text);
+		void ERR (const std::string& text);
 		
 		/**
 	      * @brief Prints semantic error and shutdown the program
 	      */
-		void ERR2 (const MpString& text);
+		void ERR2 (const std::string& text);
 		
 		/**
 	      * @brief Move to the next lexeme
@@ -79,7 +82,7 @@ namespace MiniPascal
 	      * @brief Shows current lexeme and text "name"
 		  * @note Useful for debugging purposes
 	      */
-		void INFO (const MpString& name) const;
+		void INFO (const std::string& name) const;
 
 		/**
 	      * @brief "program" keyword handler
@@ -160,13 +163,18 @@ namespace MiniPascal
 	      */
 		MpTypesDict   m_opTypes;
 
+		/**
+		  * @brief Logger stream
+		  */
+		Poco::LogStream& m_logstream;
+
 	public:
-		explicit MpParser (MpLexer*);
+		explicit MpParser (MpLexer* _lexer, Poco::LogStream& _logstream);
 
 		/**
 	      * @brief Load lexeme table using lexer object.
 	      */
-		bool loadLexemeTable (MpLexer* l);
+		bool loadLexemeTable (MpLexer* _lexer);
 
 		/**
 	      * @brief Parse specified in lexer file.

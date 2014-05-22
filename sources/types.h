@@ -9,13 +9,14 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+//
+// C++ STL headers
+//
 #include <algorithm>
 #include <functional>
 
 #include <string>
 
-#include <iostream>
-#include <fstream>
 #include <sstream>
 
 #include <vector>
@@ -23,11 +24,38 @@
 #include <set>
 #include <map>
 
-#include <ctype.h>
+//
+// POCO headers
+//
 
+// String operations
+#include <Poco/UTF8String.h>
+#include <Poco/String.h>
+#include <Poco/StringTokenizer.h>
+#include <Poco/Unicode.h>
+#include <Poco/UnicodeConverter.h>
+#include <Poco/TextEncoding.h>
+
+// Input/output
+#include <Poco/Path.h>
+#include <Poco/FileStream.h>
+
+// Logging
+#include <Poco/Logger.h>
+#include <Poco/LogStream.h>
 #ifdef _WIN32
-#include <windows.h>
-#include <tchar.h>
+#include <Poco/WindowsConsoleChannel.h>
+#else
+#include <Poco/ConsoleChannel.h>
+#endif
+
+//
+// Check whether Poco was compiled with UTF-8 encoding support
+//
+#ifdef _WIN32
+#ifndef POCO_WIN32_UTF8
+#error "MiniPascalInterpreter will work only with UTF-8 encoding"
+#endif // ! POCO_WIN32_UTF8 
 #endif
 
 namespace MiniPascal
@@ -35,167 +63,34 @@ namespace MiniPascal
 	struct MpVariable;
 	struct MpOpTypes;
 
-	//
-    // Character types
-    // TODO: in GCC wchar_t has 4 bytes size, but in Visual C++ only 2. We should check it!
-	//
-	typedef char    MpCharA;
-	typedef wchar_t MpCharU;
-
-	//
-    // C "string" functions: copy and character type determination
-	//
-    #define MpIsAlNumA isalnum
-    #define MpIsAlNumU iswalnum
-	#define MpIsSpaceA isspace
-	#define MpIsSpaceU iswspace
-    #define MpIsAlU iswalpha
-    #define MpIsAlA isalpha
-    #define MpIsDigitU iswdigit
-    #define MpIsDigitA isdigit
-    #define MpStrCpyU wcscpy
-    #define MpStrCpyA strcpy
-	#define MpToLowerU towlower
-	#define MpToLowerA tolower
-
-	//
-    // C++ STL string types and vector of them
-	//
-	typedef std::wstring MpStringU;
-	typedef std::vector<MpStringU> MpStringListU;
-	typedef std::string MpStringA;
-	typedef std::vector<MpStringA> MpStringListA;
-
-	//
-    // C++ STL streams, file and standard
-	//
-	typedef std::ostream MpOutputStream;
-    typedef std::wstringstream MpStringStreamU;
-    typedef std::stringstream MpStringStreamA;
-    typedef std::ifstream MpInputFileStreamA;
-    typedef std::wifstream MpInputFileStreamU;
-    typedef std::ofstream MpOutputFileStreamA;
-    typedef std::wofstream MpOutputFileStreamU;
-    #define MpCinA std::cin
-    #define MpCinU std::wcin
-    #define MpCoutA std::cout
-    #define MpCoutU std::wcout
-
-	//
-    // Constants for INI file parser
-	//
-    const char MP_SECTION_BEGIN_A = '[';
-    const wchar_t MP_SECTION_BEGIN_U = L'[';
-
-	//
-    // Type selection depends on selected character encoding
-	//
-#ifdef _UNICODE
-#ifndef _TEXT
-    #define _TEXT(x) L ## x
-#endif
-
-    #define MpIsDigit MpIsDigitU
-    #define MpIsAl MpIsAlU
-    #define MpIsAlNum MpIsAlNumU
-	#define MpIsSpace MpIsSpaceU
-    #define MpStrCpy MpStrCpyU
-	#define MpToLower MpToLowerU
-
-	typedef MpCharU MpChar;
-	typedef MpStringU MpString;
-	typedef MpStringListU MpStringList;
-
-    typedef MpStringStreamU MpStringStream;
-    #define MpCin MpCinU
-    #define MpCout MpCoutU
-	typedef MpInputFileStreamU MpInputFileStream;
-    typedef MpOutputFileStreamU MpOutputFileStream;
-
-    #define MP_SECTION_BEGIN MP_SECTION_BEGIN_U
-#else
-	#ifndef _TEXT
-		#define _TEXT(x) x
-	#endif
-
-    #define MpIsDigit MpIsDigitA
-    #define MpIsAl MpIsAlA
-    #define MpIsAlNum MpIsAlNumA
-	#define MpIsSpace MpIsSpaceA
-    #define MpStrCpy MpStrCpyA
-	#define MpToLower MpToLowerA
-
-	typedef MpCharA MpChar;
-	typedef MpStringA MpString;
-	typedef MpStringListA MpStringList;
-
-    typedef MpStringStreamA MpStringStream;
-    #define MpCin MpCinA
-    #define MpCout MpCoutA
-	typedef MpInputFileStreamA MpInputFileStream;
-    typedef MpOutputFileStreamA MpOutputFileStream;
-
-    #define MP_SECTION_BEGIN MP_SECTION_BEGIN_A
-#endif // _UNICODE
-
-#ifdef _WIN32
-	#define MP_COLOR_BLUEGREEN (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY)
-	#define MP_COLOR_REDGREEN (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY)
-	#define MP_COLOR_RED (FOREGROUND_RED | FOREGROUND_INTENSITY)
-#else
-	#define MP_COLOR_BLUEGREEN 0
-	#define MP_COLOR_REDGREEN 0
-	#define MP_COLOR_RED 0
-#endif // _WIN32
-
-	//
-    // Console text colors definition
-	//
-	#define MP_COLOR_NORMAL  MP_COLOR_BLUEGREEN
-	#define MP_COLOR_WARNING MP_COLOR_REDGREEN
-	#define MP_COLOR_ERROR   MP_COLOR_RED
-
-	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	//
-    // Console and OS helper functions
-    // TODO: Unix/gcc implementation
-	//
-
-	inline void toLower (MpString& _str)
-	{
-		std::transform (_str.begin (), _str.end (), _str.begin (),
-						std::bind (MpToLower, std::placeholders::_1));
-	}
-
 	/**
 	  * @brief Set the console window title
-	  * @note Currently working under Windows only
 	  */
-    extern void setConsoleTitle (const MpChar* _title);
-
-	/**
-	  * @brief  Set the foreground text color
-	  * @note Currently working under Windows only
-	  * @param[in] _cl New foreground text color in Windows console color format: FOREGROUND_*
-	  */
-    extern void setTextColor (unsigned short _cl);
-
-	/**
-	  * @brief Forces console window to stop work and wait for any key have been pressed.
-	  * @note Currently working under Windows only
-	  */
-    extern void systemPause ();
+	inline void setConsoleTitle (const std::string& _text)
+	{
+#ifdef _WIN32
+#ifdef _UNICODE
+		std::wstring utext;
+		Poco::UnicodeConverter::toUTF16 (_text, utext);
+		SetConsoleTitleW (utext.data ());
+#else
+		SetConsoleTitleA (text);
+#endif // _UNICODE
+#else
+		// TODO: test this under Unix terminals
+		printf ("%c]0;%s%c", '\033', _text.data (), '\007');
+#endif // _WIN32
+	}
 
 	//
     // Complex STL map and set types for lexer, parser, polir
 	//
-	typedef std::map <MpString, MpVariable, std::less <MpString> > MpVariableMap;
-	typedef std::set < MpChar, std::less <MpChar> > MpDigitsSet;
+	typedef std::map <std::string, MpVariable, std::less <std::string> > MpVariableMap;
+	typedef std::set < char, std::less <char> > MpDigitsSet;
 	typedef MpDigitsSet MpLettersSet;
-	typedef std::set < MpString, std::less <MpString> > MpStringsSet;
-	typedef std::map < MpString, MpString, std::less <MpString> > MpStringsDict;
-	typedef std::map < MpString, MpOpTypes, std::less <MpString> > MpTypesDict;
+	typedef std::set < std::string, std::less <std::string> > MpStringsSet;
+	typedef std::map < std::string, std::string, std::less <std::string> > MpStringsDict;
+	typedef std::map < std::string, MpOpTypes, std::less <std::string> > MpTypesDict;
 
 	/**
 	  * @struct MpVariable
@@ -208,7 +103,7 @@ namespace MiniPascal
 	  */
 	struct MpVariable
 	{
-		MpString type;
+		std::string type;
 		int value;
 	};
 
@@ -226,10 +121,10 @@ namespace MiniPascal
 	  */
 	struct MpOpTypes
 	{
-		MpString type1;
-		MpString type2;
+		std::string type1;
+		std::string type2;
 		bool equal;
-		MpString typeResult;
+		std::string typeResult;
 	};
 }
 

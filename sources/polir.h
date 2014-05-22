@@ -17,12 +17,12 @@ namespace MiniPascal
 	  */
 	class MpPolir
 	{
-		typedef std::map <MpString, unsigned char, std::less<MpString>> PriorityMap;
+		typedef std::map <std::string, unsigned char, std::less<std::string>> PriorityMap;
 
 		/**
 		  * @brief Operators stack
 		  */
-		std::stack <MpString> m_opStack;
+		std::stack <std::string> m_opStack;
 
 		/**
 		  * @brief Operators priorities
@@ -47,17 +47,22 @@ namespace MiniPascal
 		/**
 		  * @brief Ready to interpret POLIR record
 		  */
-		std::vector <MpString> m_polirExpr;
+		std::vector <std::string> m_polirExpr;
+
+		/**
+		  * @brief Logger stream
+		  */
+		Poco::LogStream& m_logstream;
 
 		/**
 		  * @brief Return operation priority (255 if not found)
 		  */
-		int priority (MpString op) const;
+		int priority (const std::string& op) const;
 
 		/**
 		  * @brief Converts any valid simple expression to POLIR.
 		  */
-		void convert (const MpString& lexeme);
+		void convert (const std::string& lexeme);
 
 		/**
 		  * @brief Use lexer and parser data
@@ -66,25 +71,25 @@ namespace MiniPascal
 		void connectParser (MpParser* pParser);
 
 	public:
-		explicit MpPolir (MpLexer* pLex, MpParser* pPsr);
+		explicit MpPolir (MpLexer* _lexer, MpParser* _parser, Poco::LogStream& _logstream);
 
 		/**
 		  * @brief Convert expression to POLIR 
 		  * @note Uses Edsger Wybe Dijkstra algorithm
 		  */
-		void convertExpression (const MpString& exp);
+		void convertExpression (const std::string& exp);
 
 		/**
 		  * @brief Convert operation to POLIR 
 		  * @note Uses Edsger Wybe Dijkstra algorithm
 		  */
-		void convertOperation (const MpString& op);
+		void convertOperation (const std::string& op);
 
 		/**
 		  * @brief Convert expression from current lexeme up to ";"
 		  * @note Uses getNextLexeme()
 		  */
-		void convertExpression (const MpString& startL, bool* isConst);
+		void convertExpression (const std::string& startL, bool* isConst);
 
 		/**
 		  * @brief Converts program from "begin" token up to "end", "." in postfix notation
@@ -100,7 +105,7 @@ namespace MiniPascal
 		  * @brief Writes ready to interpret POLIR to specified file
 		  * @note Useful for debugging purposes
 		  */
-		bool saveToFile (const MpChar* fileName);
+		bool saveToFile (const std::string& fileName);
 	};
 }
 

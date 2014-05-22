@@ -4,10 +4,12 @@
  * @author Alexander Kamyshnikov <axill777@gmail.com>
  */   
 
-#include "config_file.h"
-
 #ifndef __MINIPASCAL_LEXER_H
 #define __MINIPASCAL_LEXER_H
+
+#include <Poco/Util/LayeredConfiguration.h>
+
+#include "types.h"
 
 namespace MiniPascal
 {
@@ -30,7 +32,7 @@ namespace MiniPascal
 	//
 	struct MpIdLexeme
 	{
-		MpString id;
+		std::string id;
 		int    count;
 	};
 
@@ -104,23 +106,23 @@ namespace MiniPascal
 		/**
 	      * @brief Known keywords list
 	      */
-		MpStringList m_keywords;
+		std::vector<std::string> m_keywords;
 
 		/**
 	      * @brief Known delimeters list
 	      */
-		MpStringList m_delimeters;
+		std::vector<std::string> m_delimeters;
 
 		/**
 	      * @brief Known Single line comment begin operators
 	      */
-		MpStringList m_slComments;
+		std::vector<std::string> m_slComments;
 
 		/**
 	      * @brief Known multiline comment begin and end symbols
 	      * @note This list must have even length
 	      */
-		MpStringList m_mlComments;
+		std::vector<std::string> m_mlComments;
 
 		/**
 	      * @brief Integer numbers found in source
@@ -150,83 +152,87 @@ namespace MiniPascal
 		/**
 	      * @brief Current lexeme index
 	      */
-		size_t m_iCurrLexeme;
+		size_t m_curr_lexeme_idx;
+
+		/**
+		  * @brief Logger stream
+		  */
+		Poco::LogStream& m_logstream;
 
 		/**
 	      * @brief Skip single-line and multi-line comments
 	      */
-		bool skipComments (MpInputFileStream& f, MpString& line, long& lineIndex);
+		bool skipComments (std::istream& _f, std::string& _line, long& _line_index);
 
 		/**
 	      * @brief Check whether specified lexeme is a number
 	      */
-		bool isNumber (const MpString& token, int& num);
+		bool isNumber (const std::string& _token, int& _num);
 
 		/**
 	      * @brief Check whether specified lexeme is a keyword
 	      */
-		bool isKeyword (const MpString& token, int& index) const;
+		bool isKeyword (const std::string& _token, int& _index) const;
 
 		/**
 	      * @brief Check whether specified lexeme is a delimeter
 	      */
-		bool isDelimiter (const MpString& token, int& index);
+		bool isDelimiter (const std::string& _token, int& _index);
 
 		/**
 	      * @brief Find token type and write it to the proper table
 	      */
-		bool writeToTable (const MpString& token, const long& lineIndex);
+		bool writeToTable (const std::string& _token, const long& _line_index);
 
 	public:
-		explicit MpLexer ();
+		explicit MpLexer (Poco::LogStream& _logstream);
 		~MpLexer ();
 
-	public:
 		/**
 	      * @brief Load keywords and delimeters from specified text configuration file
 	      */
-		bool         loadConfig (const MpChar * name);
+		bool loadConfig (Poco::Util::LayeredConfiguration& _config);
 
 		/**
 	      * @brief Extract lexemes from specified source code file
 	      */
-		bool         loadFile (const MpChar * name);
+		bool loadFile (const std::string& _name);
 
 		/**
 	      * @brief Save lexemes to specified file
 	      * @note Useful for debugging purposes
 	      */
-		bool         saveLexemeFile (const MpChar * name) const;
+		bool saveLexemeFile (const std::string& _name) const;
 
 		/**
 	      * @brief Return next lexeme in lexeme table or "", if EOF found
 	      */
-		MpString     getNextLexeme (long * lineIndex);
+		std::string getNextLexeme (long* _line_index);
 		
 		/**
 	  * @brief Return specified lexeme from lexeme table
 	  */
-		MpString     getLexeme (const long index) const;
+		std::string getLexeme (const long _index) const;
 		
 		/**
 	      * @brief Set current lexeme to program first.
 	      */
-		void         setToBegin ();
+		void setToBegin ();
 		
 		/**
 	      * @brief Return current lexeme index
 	      */
-		size_t       getCurrentLexemeIndex () const;
+		size_t getCurrentLexemeIndex () const;
 
 		/**
 	      * @brief Return specified keyword
 	      */
-		MpString     getKeyword (int type) const;
+		std::string getKeyword (int _type) const;
 		
 		/**
 	      * @brief Return specified delimiter
 	      */
-		MpString     getDelimiter (int type) const;
+		std::string getDelimiter (int _type) const;
 	};
 }
 

@@ -1,8 +1,8 @@
-﻿/**
+/**
  * @file
  * @brief The interpreter entry point
  * @author Alexander Kamyshnikov <axill777@gmail.com>
- */   
+ */
 
 #include "polir.h"
 
@@ -11,205 +11,268 @@
 #include <functional>
 #include <algorithm>
 
-using namespace std::placeholders;
+#include <Poco/Util/Application.h>
+#include <Poco/Util/Option.h>
+#include <Poco/Util/OptionSet.h>
+#include <Poco/Util/HelpFormatter.h>
+#include <Poco/Util/AbstractConfiguration.h>
+
 using namespace MiniPascal;
 
-void
-MiniPascal::systemPause ()
-{
-#ifdef _WIN32
-	system ("pause");
-#else
-	system("read -p \"$*\"");
-#endif
-}
+using Poco::Util::Application;
+using Poco::Util::Option;
+using Poco::Util::OptionSet;
+using Poco::Util::HelpFormatter;
+using Poco::Util::AbstractConfiguration;
+using Poco::Util::OptionCallback;
 
-void
-MiniPascal::setConsoleTitle (const MpChar* text)
+/**
+  * @brief The MiniPascal interpreter application
+  *
+  * This class do following things: 
+  * - parse command line arguments
+  * - load lexer settings from configuration file
+  * - split the source text into lexeme table (lexer)
+  * - check the MiniPascal language syntax corectness (parser)
+  * - check source semantics correctness (semler)
+  * - convert source to POLIR
+  * - execure POLIR
+  *
+  * @remark Try MiniPascalInterpreter --help (on Unix platforms) or MiniPascalInterpreter /help (elsewhere)
+  * for more information
+  */
+class MpInterpreterApp : public Application
 {
-#ifdef _WIN32
-#ifdef _UNICODE
-	SetConsoleTitleW (text);
-#else
-	SetConsoleTitleA (text);
-#endif // _UNICODE
-#endif // _WIN32
-}
+	bool m_help_requested = false;
+	bool m_verbose_mode = false;
+	std::string m_lexeme_file;
+	std::string m_polir_file;
 
-void
-MiniPascal::setTextColor (unsigned short _cl)
-{
-#ifdef _WIN32
-	SetConsoleTextAttribute (GetStdHandle (STD_OUTPUT_HANDLE), _cl);
-#else
-	#error "Unsupported OS";
-#endif // _WIN32
-}
-
-namespace
-{
-	/**
-	  * @brief Split the command line arguments into the nice string list
-	  */
-	static std::vector<MpString>
-	ParseCommandLine (const MpChar* _raw_cmd_line)
+public:
+	MpInterpreterApp () : m_help_requested (false)
 	{
-		MpString cmd_line (_raw_cmd_line);
-		enum ParserMode { InQuotes, InText, InSpace };
-		ParserMode mode = InText;
+	}
 
-		std::vector <MpString> args;
-		MpString current_arg;
+protected:
+	virtual void initialize (Application& _self)
+	{
+		//
+		// Load default configuration files, if present
+		//
+		auto ini_loaded_cnt = loadConfiguration ();
+		Application::initialize (_self);
 
-		for (std::size_t i = 0; i < cmd_line.length (); ++i)
+		//
+		// TODO: Add your own initialization code here
+		//
+	}
+
+	virtual void uninitialize ()
+	{
+		//
+		// TODO: add your own uninitialization code here
+		//
+		Application::uninitialize ();
+	}
+
+	virtual void reinitialize (Application& _self)
+	{
+		Application::reinitialize (_self);
+
+		//
+		// TODO: add your own reinitialization code here
+		//
+	}
+
+	virtual void defineOptions (OptionSet& _options)
+	{
+		Application::defineOptions (_options);
+
+		_options.addOption (
+			Option ("help", "h", "display help information on command line arguments")
+			.required (false)
+			.repeatable (false)
+			.callback (OptionCallback<MpInterpreterApp> (this, &MpInterpreterApp::handleHelp)));
+
+		_options.addOption (
+			Option ("verbose", "v", "allow extended output for lexer, parser/semler and POLIR converter and interpreter")
+			.required (false)
+			.repeatable (false)
+			.callback (OptionCallback<MpInterpreterApp> (this, &MpInterpreterApp::handleVerbose)));
+
+		_options.addOption (
+			Option ("lexeme-file", "l", "save lexeme data to the specified file")
+			.required (false)
+			.repeatable (false)
+			.argument ("file")
+			.callback (OptionCallback<MpInterpreterApp> (this, &MpInterpreterApp::handleLexemeFile)));
+
+		_options.addOption (
+			Option ("polir-file", "p", "save POLIR data to the specified file")
+			.required (false)
+			.repeatable (false)
+			.argument ("file")
+			.callback (OptionCallback<MpInterpreterApp> (this, &MpInterpreterApp::handlePolirFile)));
+	}
+
+	void handleVerbose (const std::string& _name, const std::string& _value)
+	{
+		//
+		// Save the verbose mode state
+		//
+		m_verbose_mode = true;
+	}
+
+	void handleLexemeFile (const std::string& _name, const std::string& _value)
+	{
+		//
+		// Save the lexeme file name
+		//
+		m_lexeme_file = _value;
+	}
+
+	void handlePolirFile (const std::string& _name, const std::string& _value)
+	{
+		//
+		// Save the POLIR file name
+		//
+		m_polir_file = _value;
+	}
+
+	void handleHelp (const std::string& _name, const std::string& _value)
+	{
+		m_help_requested = true;
+
+		displayHelp ();
+		stopOptionsProcessing ();
+	}
+
+	void handleConfig (const std::string& _name, const std::string& _value)
+	{
+		loadConfiguration (_value);
+	}
+
+	void displayHelp ()
+	{
+		//
+		// TODO: write a complete and clear help text here
+		//
+		HelpFormatter helpFormatter (options ());
+		helpFormatter.setCommand (commandName ());
+		helpFormatter.setUsage ("OPTIONS");
+		helpFormatter.setHeader ("Interpreter of very limited subset of the famous Pascal language");
+		helpFormatter.format (std::cout);
+	}
+
+	virtual int main (const std::vector<std::string>& _args)
+	{
+		if (!m_help_requested)
 		{
 			//
-			// Parse enquoted paths
+			// Setup the logstream object to use pretty colored output channel, under both Unix and Windows
 			//
-			// FIXME: handle inner quotes (e.g. ""path"")
-			//
-			if (cmd_line [i] == _TEXT ('"'))
-			{
-				if (mode != InQuotes)
-				{
-					mode = InQuotes;
-					current_arg += _TEXT ('"');
-				}
-				else
-				{
-					mode = InText;
+#ifdef _WIN32
+			Poco::AutoPtr<Poco::WindowsColorConsoleChannel> ch = new Poco::WindowsColorConsoleChannel ();
+#else
+			Poco::AutoPtr<Poco::ColorConsoleChannel> ch = new Poco::ColorConsoleChannel ();
+#endif
+			logger ().setChannel (ch);
 
-					current_arg += _TEXT ('"');
-					args.push_back (current_arg);
-					current_arg.clear ();
-				}
+			//
+			// Enable output of debug info
+			//
+			if (m_verbose_mode)
+				logger ().setLevel (Poco::Message::PRIO_DEBUG);
+
+			//
+			// Create stream interface object for STL stream-like output
+			//
+			Poco::LogStream ls (logger ());
+
+			Poco::TextEncoding& te = Poco::TextEncoding::global ();
+			ls.debug () << "The global interpreter encoding: " << te.canonicalName () << std::endl;
+
+			//
+			// Save the MiniPascal sources names from positional arguments
+			//
+			// NOTE:  Positional arguments are unnamed arguments on the command line, coming at the end after all other options
+			//
+			std::vector<std::string> mp_sources = _args;
+
+			//
+			// Interpreter must have at least one source file to parse
+			//
+			if (mp_sources.empty ())
+			{
+				ls.error () << "ERROR: Pascal source code file was not specified" << std::endl;
+				std::cin.get ();
+				exit (0);
 			}
-			//
-			// Handle spaces
-			//
-			else if (MpIsSpace (cmd_line[i]))
-			{
-				if (mode != InQuotes)
-				{
-					mode = InSpace;
 
-					if (!current_arg.empty ())
-						args.push_back (current_arg);
-					current_arg.clear ();
-				}
-				else
-					current_arg += cmd_line[i];
+			//
+			// Let's start: create and initialize the lexer object
+			//
+			std::unique_ptr<MpLexer> lex (new MpLexer (ls));
+			if (!lex->loadConfig (config ()))
+			{
+				std::cin.get ();
+				return 1;
 			}
-			//
-			// Other symbol is a part of argument
-			//
-			else
+
+			for (auto src : mp_sources)
 			{
-				if (mode == InSpace || i == cmd_line.length ()-1)
+				//
+				// Set the appropriate console window title
+				//
+				setConsoleTitle (Poco::Path (src).getFileName () + " - MiniPascal interpreter");
+
+				//
+				// Extract lexemes from source
+				//
+				if (!lex->loadFile (src))
 				{
-					mode = InText;
-
-					if (i == cmd_line.length ()-1)
-						current_arg += cmd_line[i];
-
-					if (!current_arg.empty ())
-						args.push_back (current_arg);
-					current_arg.clear ();
+					std::cin.get ();
+					break;
 				}
 
-				current_arg += cmd_line[i];
+				//
+				// Save the lexeme list into the file if required
+				//
+				if (!m_lexeme_file.empty ())
+					lex->saveLexemeFile (m_lexeme_file);
+
+				std::cin.get ();
+
+				//
+				// Create and initialize parser
+				//
+				std::unique_ptr<MpParser> psr (new MpParser (lex.get (), ls));
+				psr->parse ();
+				std::cin.get ();
+
+				//
+				// Create and initialize POLIR converter and interpreter
+				//
+				std::unique_ptr<MpPolir> plr (new MpPolir (lex.get (), psr.get (), ls));
+				plr->convertProgram ();
+
+				//
+				// Save the POLIR tokens into the file if required
+				//
+				if (!m_polir_file.empty ())
+					plr->saveToFile (m_polir_file);
+
+				//
+				// Execure converted program
+				//
+				plr->executeProgram ();
 			}
 		}
 
-		return args;
+		std::cin.get ();
+		return Application::EXIT_OK;
 	}
-}
+};
 
-int
-_tmain (int _argc, MpChar* /*argv[]*/)
-{
-	//
-	// Set console window attributes
-	//
-	setTextColor (MP_COLOR_NORMAL);
-	setConsoleTitle (_TEXT ("Pascal-like language compiler"));
+POCO_APP_MAIN (MpInterpreterApp)
 
-	//
-	// Parse the command line
-	//
-	if (_argc < 2)
-	{
-		MpCout << _TEXT ("ERROR: Pascal source code file not specified.") << std::endl;
-		systemPause ();
-		exit (0);
-	}
-
-	//
-	// Parse command line options
-	//
-	std::vector<MpString> args = ParseCommandLine (GetCommandLine ());
-
-	const MpString sourceFileName = args[1];
-	MpCout << _TEXT ("SOURCE FILE: ") << sourceFileName << std::endl;
-
-	bool saveLexemeFile = false;
-	bool savePolirFile = false;
-
-	std::vector<MpString>::iterator iArg = args.begin ();
-	for ( ; iArg != args.end (); iArg ++)
-	{
-		if ((_TEXT ("--write-lexeme-file") == (*iArg)) || (_TEXT ("-l") == (*iArg)) || (_TEXT ("-L") == (*iArg)))
-			saveLexemeFile = true;
-
-		if ((_TEXT ("--write-MpPolir-file") == (*iArg)) || (_TEXT ("-p") == (*iArg)) || (_TEXT ("-P") == (*iArg)))
-			savePolirFile = true;
-	}
-
-	//
-	// Create and initialize the lexer object
-	//
-	std::unique_ptr<MpLexer> lex (new MpLexer ());
-	if (!lex->loadConfig (_TEXT ("LA.conf")))
-	{
-		systemPause ();
-		return 1;
-	}
-
-	//
-	// Extract lexemes from source
-	//
-	if (!lex->loadFile (sourceFileName.c_str ()))
-	{
-		systemPause ();
-		return 2;
-	}
-
-	if (saveLexemeFile)
-		lex->saveLexemeFile (_TEXT ("lexeme.txt"));
-
-	systemPause ();
-
-	//
-	// Create and initialize parser
-	//
-	std::unique_ptr<MpParser> psr (new MpParser (lex.get ()));
-	psr->parse ();
-	systemPause ();
-
-	//
-	// Create and initialize POLIR converter and interpreter
-	//
-	std::unique_ptr<MpPolir> plr (new MpPolir (lex.get (), psr.get ()));
-	plr->convertProgram ();
-
-	if (savePolirFile)
-		plr->saveToFile (_TEXT ("MpPolir.txt"));
-
-	//
-	// Execure converted program
-	//
-	plr->executeProgram ();
-	
-	systemPause ();
-	return 0;
-}

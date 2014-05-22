@@ -41,6 +41,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <ExecutablePath>f:\Downloads_large\poco-1.4.6p4\bin\;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>F:\Downloads_large\poco-1.4.6p4\XML\include;F:\Downloads_large\poco-1.4.6p4\Util\include;F:\Downloads_large\poco-1.4.6p4\Net\include;F:\Downloads_large\poco-1.4.6p4\Foundation\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\Downloads_large\poco-1.4.6p4\lib;$(LibraryPath)</LibraryPath>
+    <ReferencePath>f:\Downloads_large\poco-1.4.6p4\bin\;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -76,14 +80,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="sources\config_file.h" />
     <ClInclude Include="sources\lexer.h" />
     <ClInclude Include="sources\parser.h" />
     <ClInclude Include="sources\polir.h" />
     <ClInclude Include="sources\types.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sources\config_file.cpp" />
     <ClCompile Include="sources\lexer.cpp" />
     <ClCompile Include="sources\main.cpp" />
     <ClCompile Include="sources\parser.cpp" />

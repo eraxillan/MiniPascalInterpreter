@@ -1,10 +1,9 @@
 
 program
-var k1, k, f : int;
-    b1, b : bool;
-    notUsed : int; // warning example.
+var k, f : int;
+    notUsed : int; // пример предупреждения о неиспользуемой переменной
 begin
-   // Line comment.
+   // Однострочный комментарий
 begin
    // Factorial
    read (k);
