@@ -49,9 +49,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="configuration\LA.conf">
-      <Filter>Configuration</Filter>
-    </None>
     <None Include="test_sources\source.pas">
       <Filter>Test sources</Filter>
     </None>

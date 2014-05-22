@@ -92,7 +92,6 @@
     <ClCompile Include="sources\polir.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="configuration\LA.conf" />
     <None Include="test_sources\source.pas" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
