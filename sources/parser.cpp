@@ -611,13 +611,10 @@ MpParser::N ()
 	m_exprOpType.push (m_lexer->getKeyword (KEYWORD_INT));
 
 	int num;
-	std::stringstream ss;
-	ss << m_sCurrLexeme;
-	ss >> num;
-	if (ss.fail () || !ss.eof ())
-		ERR ("Invalid number");
-	else
+	if (stringIsInt (m_sCurrLexeme, num))
 		GC ();
+	else
+		ERR ("NaN");
 }
 
 void

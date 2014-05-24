@@ -165,11 +165,6 @@ namespace MiniPascal
 		bool skipComments (std::istream& _f, std::string& _line, long& _line_index);
 
 		/**
-	      * @brief Check whether specified lexeme is a number
-	      */
-		bool isNumber (const std::string& _token, int& _num);
-
-		/**
 	      * @brief Check whether specified lexeme is a keyword
 	      */
 		bool isKeyword (const std::string& _token, int& _index) const;

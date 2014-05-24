@@ -15,6 +15,7 @@
 #include <Poco/Util/Option.h>
 #include <Poco/Util/OptionSet.h>
 #include <Poco/Util/HelpFormatter.h>
+#include <Poco/PatternFormatter.h>
 #include <Poco/Util/AbstractConfiguration.h>
 
 using namespace MiniPascal;
@@ -172,25 +173,35 @@ protected:
 			// Setup the logstream object to use pretty colored output channel, under both Unix and Windows
 			//
 #ifdef _WIN32
-			Poco::AutoPtr<Poco::WindowsColorConsoleChannel> ch = new Poco::WindowsColorConsoleChannel ();
+			Poco::AutoPtr<Poco::WindowsColorConsoleChannel> color_channel (new Poco::WindowsColorConsoleChannel ());
 #else
-			Poco::AutoPtr<Poco::ColorConsoleChannel> ch = new Poco::ColorConsoleChannel ();
+			Poco::AutoPtr<Poco::ColorConsoleChannel> color_channel (new Poco::ColorConsoleChannel ());
 #endif
-			logger ().setChannel (ch);
-
-			//
-			// Enable output of debug info
-			//
-			if (m_verbose_mode)
-				logger ().setLevel (Poco::Message::PRIO_DEBUG);
+			Poco::AutoPtr<Poco::PatternFormatter> pattern_formatter (new Poco::PatternFormatter);
+			pattern_formatter->setProperty ("pattern", "[%H:%M:%S] [%p] %t");
+			Poco::AutoPtr<Poco::FormattingChannel> formatting_channel (new Poco::FormattingChannel (pattern_formatter, color_channel));
+			logger ().setChannel (formatting_channel);
+			//			logger ().setChannel (color_channel);
 
 			//
 			// Create stream interface object for STL stream-like output
 			//
 			Poco::LogStream ls (logger ());
 
-			Poco::TextEncoding& te = Poco::TextEncoding::global ();
-			ls.debug () << "The global interpreter encoding: " << te.canonicalName () << std::endl;
+			//
+			// Enable output of debug info if appropriate parameter was specified
+			//
+			if (m_verbose_mode)
+			{
+				logger ().setLevel (Poco::Message::PRIO_DEBUG);
+				ls.debug () << "Verbose mode was enabled" << std::endl;
+
+				//
+				// Show encoding name globally used by Poco library
+				//
+				Poco::TextEncoding& te = Poco::TextEncoding::global ();
+				ls.debug () << "The global interpreter encoding: " << te.canonicalName () << std::endl;
+			}
 
 			//
 			// Save the MiniPascal sources names from positional arguments

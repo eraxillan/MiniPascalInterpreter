@@ -88,18 +88,6 @@ MpLexer::skipComments (std::istream& f, std::string& line, long& lineIndex)
 }
 
 bool
-MpLexer::isNumber (const std::string& _token, int& _num)
-{
-	std::stringstream ss;
-	ss << _token;
-	ss >> _num;
-	if (ss.fail () || !ss.eof ())
-		return false;
-
-	return true;
-}
-
-bool
 MpLexer::isKeyword (const std::string& _token, int& _index) const
 {
 	int i = 0;
@@ -144,7 +132,7 @@ MpLexer::writeToTable (const std::string& _token, const long& _line_index)
 	// Token is number (table 3)
 	//
 	int num = 0;
-	if (isNumber (_token, num))
+	if (stringIsInt (_token, num))
 	{
 		//
 		// Use the hash function
@@ -455,7 +443,7 @@ MpLexer::loadFile (const std::string& _name)
 				{
 					m_logstream.debug () << "Token: " << token << std::endl;
 					int num = 0, index = 0;
-					if (isNumber (token, num))
+					if (stringIsInt (token, num))
 						m_logstream.debug () << "Number (3): " << num << std::endl;
 					else if (isKeyword (token, index))
 						m_logstream.debug () << "Keyword (1): " << token << std::endl;
@@ -646,10 +634,7 @@ MpLexer::getNextLexeme (long* _line_index)
 		//
 		case 3:
 		{
-			std::stringstream ss;
-			ss << m_pArrNumber [m_pArrIndex [m_curr_lexeme_idx].j].number;
-			m_curr_lexeme_idx++;
-			return ss.str ();
+			return intToString (m_pArrNumber [m_pArrIndex [m_curr_lexeme_idx++].j].number);
 		}
 		//
 		// Identifier
@@ -692,9 +677,7 @@ MpLexer::getLexeme (const long _index) const
 		//
 		case 3:
 		{
-			std::stringstream ss;
-			ss << m_pArrNumber [m_pArrIndex [_index].j].number;
-			return ss.str ();
+			return intToString (m_pArrNumber [m_pArrIndex [_index].j].number);
 		}
 		//
 		// Identifier

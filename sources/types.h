@@ -35,6 +35,8 @@
 #include <Poco/Unicode.h>
 #include <Poco/UnicodeConverter.h>
 #include <Poco/TextEncoding.h>
+#include <Poco/NumberFormatter.h>
+#include <Poco/NumberParser.h>
 
 // Input/output
 #include <Poco/Path.h>
@@ -43,6 +45,7 @@
 // Logging
 #include <Poco/Logger.h>
 #include <Poco/LogStream.h>
+#include <Poco/FormattingChannel.h>
 #ifdef _WIN32
 #include <Poco/WindowsConsoleChannel.h>
 #else
@@ -62,6 +65,42 @@ namespace MiniPascal
 {
 	struct MpVariable;
 	struct MpOpTypes;
+
+	inline bool
+	stringIsInt (const std::string& _str, int& _num)
+	{
+		return Poco::NumberParser::tryParse (_str, _num);
+	}
+
+	/**
+	  * @brief Convert STL string to the integer number
+	  * @return Null if @a _str is not a number
+	  */
+	inline int
+	stringToInt (Poco::LogStream& _ls, const std::string& _str)
+	{
+		int value = 0;
+
+		try
+		{
+			value = Poco::NumberParser::parse (_str);
+		}
+		catch (Poco::SyntaxException sex)
+		{
+			_ls.error () << "Polir, stringToInt function error: " << sex.message () << std::endl;
+		}
+
+		return value;
+	}
+
+	/**
+	  * @brief Converts integer number to the STL string
+	  */
+	inline std::string
+	intToString (int _num)
+	{
+		return Poco::NumberFormatter::format (_num);
+	}
 
 	/**
 	  * @brief Set the console window title

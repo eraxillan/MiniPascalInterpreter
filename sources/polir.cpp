@@ -368,35 +368,6 @@ MpPolir::convertProgram ()
 	m_logstream.debug () << endl;
 }
 
-namespace
-{
-	//
-	// Converts MpString to integer - return 0 if s isn't number
-	//
-	static int
-	stringToInt (const std::string& s)
-	{
-		std::stringstream ss;
-		ss << s;
-		int i = 0;
-		ss >> i;
-		return i;
-	}
-
-	//
-	// Converts integer to MpString
-	//
-	static std::string
-	intToString (const int i)
-	{
-		std::stringstream ss;
-		std::string s;
-		ss << i;
-		ss >> s;
-		return s;
-	}
-}
-
 void
 MpPolir::executeProgram ()
 {
@@ -424,7 +395,7 @@ MpPolir::executeProgram ()
 				continue;
 			}
 
-			i = stringToInt (sIndex);
+			i = stringToInt (m_logstream, sIndex);
 			continue;
 		}
 
@@ -436,7 +407,7 @@ MpPolir::executeProgram ()
 			std::string sIndex = varStack.top ();
 			varStack.pop ();
 
-			i = stringToInt (sIndex);
+			i = stringToInt (m_logstream, sIndex);
 			continue;
 		}
 
@@ -456,12 +427,12 @@ MpPolir::executeProgram ()
 			varStack.pop ();
 
 			if (isdigit (sX [0]) || sX [0] == '-')
-				x = stringToInt (sX);
+				x = stringToInt (m_logstream, sX);
 			else
 				x = m_vars [sX].value;
 
 			if (isdigit (sY [0]) || sY [0] == '-')
-				y = stringToInt (sY);
+				y = stringToInt (m_logstream, sY);
 			else
 				y = m_vars [sY].value;
 
@@ -578,7 +549,7 @@ MpPolir::executeProgram ()
 			varStack.pop ();
 
 			if (isdigit (sX [0]) || sX [0] == '-')
-				x = stringToInt (sX);
+				x = stringToInt (m_logstream, sX);
 			else
 				x = m_vars [sX].value;
 
@@ -641,7 +612,7 @@ MpPolir::executeProgram ()
 			else
 			{
 				if (isdigit (sX [0]) || (sX [0] == '-'))
-					x = stringToInt (sX);
+					x = stringToInt (m_logstream, sX);
 				else
 					x = m_vars [sX].value;
 			}
@@ -653,7 +624,7 @@ MpPolir::executeProgram ()
 			else
 			{
 				if (isdigit (sY [0]) || (sY [0] == '-'))
-					y = stringToInt (sY);
+					y = stringToInt (m_logstream, sY);
 				else
 					y = m_vars [sY].value;
 			}
@@ -717,16 +688,17 @@ MpPolir::executeProgram ()
 			varStack.pop ();
 
 			std::string sIn;
-			m_logstream.debug () << "read: enter " << sX << " : " << std::endl;
+			m_logstream.debug () << "\"read\" function was called: please enter "
+				<< m_vars [sX].type << " variable \"" << sX << "\" : " << std::endl;
 			std::cin >> sIn;
 
 			//
-			// Convert to lower case one
+			// Convert variable value to the lower case
 			//
 			Poco::UTF8::toLowerInPlace (sIn);
 
 			//
-			// Update value
+			// Update variable value with user entered one
 			//
 			if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL))
 			{
@@ -737,7 +709,7 @@ MpPolir::executeProgram ()
 			}
 
 			if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_INT))
-				m_vars [sX].value = stringToInt (sIn);
+				m_vars [sX].value = stringToInt (m_logstream, sIn);
 
 			i ++;
 			continue;
@@ -756,15 +728,15 @@ MpPolir::executeProgram ()
 				if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL))
 				{
 					if (m_vars [sX].value)
-						m_logstream.debug () << "write: " << "true" << std::endl;
+						m_logstream.debug () << "\"write\" function was called: the result is \"true\"" << std::endl;
 					else
-						m_logstream.debug () << "write: " << "false" << std::endl;
+						m_logstream.debug () << "\"write\" function was called: the result is \"false\"" << std::endl;
 				}
 				else
-					m_logstream.debug () << "write: " << m_vars [sX].value << std::endl;
+					m_logstream.debug () << "\"write\" function was called: the result is \"" << m_vars [sX].value << "\"" << std::endl;
 			}
 			else
-				m_logstream.debug () << "write: " << sX << std::endl;
+				m_logstream.debug () << "\"write\" function was called: the result is \"" << sX << "\"" << std::endl;
 
 			i ++;
 			continue;
@@ -790,7 +762,7 @@ MpPolir::executeProgram ()
 				m_vars [s2].value = 1;
 			if (isdigit (s1 [0]) || s1 [0] == '-')
 			{
-				m_vars [s2].value = stringToInt (s1);
+				m_vars [s2].value = stringToInt (m_logstream, s1);
 
 				// DEBUG:
 				//cout << s2 << ":=" << stringToInt (s1) << endl;
