@@ -678,38 +678,40 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
-		// FIXME: replace std::cin with Poco::BinaryStream of smth with UTF-8 support
 		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_READ))
 		{
 			//
 			// id read
 			//
-			std::string sX = varStack.top ();
+			std::string name = varStack.top ();
 			varStack.pop ();
 
-			std::string sIn;
-			m_logstream.debug () << "\"read\" function was called: please enter "
-				<< m_vars [sX].type << " variable \"" << sX << "\" : " << std::endl;
-			std::cin >> sIn;
+			std::wstring utype;
+			Poco::UnicodeConverter::toUTF16 (m_vars [name].type, utype);
+			std::wstring uname;
+			Poco::UnicodeConverter::toUTF16 (name, uname);
+			std::wcout << L"\"read\" function was called: please enter "
+				<< utype << " variable \"" << uname << "\" : " << std::endl;
 
 			//
-			// Convert variable value to the lower case
+			// Read the value as UTF-8, and convert it to the lower case
 			//
-			Poco::UTF8::toLowerInPlace (sIn);
+			std::string value = readConsoleString ();
+			Poco::UTF8::toLowerInPlace (value);
 
 			//
 			// Update variable value with user entered one
 			//
-			if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL))
+			if (!Poco::UTF8::icompare (m_vars [name].type, m_lexer->getKeyword (KEYWORD_BOOL)))
 			{
-				if ((sIn == m_lexer->getKeyword (KEYWORD_FALSE)) || (sIn == "0"))
-					m_vars [sX].value = 0;
+				if ((value == m_lexer->getKeyword (KEYWORD_FALSE)) || (value == "0"))
+					m_vars [name].value = 0;
 				else
-					m_vars [sX].value = 1;
+					m_vars [name].value = 1;
 			}
 
-			if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_INT))
-				m_vars [sX].value = stringToInt (m_logstream, sIn);
+			if (!Poco::UTF8::icompare (m_vars [name].type, m_lexer->getKeyword (KEYWORD_INT)))
+				m_vars [name].value = stringToInt (m_logstream, value);
 
 			i ++;
 			continue;

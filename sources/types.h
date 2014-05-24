@@ -66,6 +66,37 @@ namespace MiniPascal
 	struct MpVariable;
 	struct MpOpTypes;
 
+	/**
+	  * @brief Read the string value from @a std::cin and return it as UTF-8 encoded
+	  * @note Under Windows function assume that @a chcp or @a SetConsoleCP function was not called,
+	  * and default OEM encoding still used in the console
+	  */
+	inline std::string
+	readConsoleString ()
+	{
+		//
+		// Under Unix this simple stream read operation is enough
+		//
+		std::string value;
+		std::cin >> value;
+
+		//
+		// NOTE: But under Windows we have to do TWO conversions: OEM codepage --> UTF-16 and UTF-16 --> UTF8
+		//
+#ifdef _WIN32
+		std::wstring uvalue;
+		uvalue.resize (value.size ());
+		OemToCharW (value.data (), &uvalue [0]);
+
+		Poco::UnicodeConverter::toUTF8 (uvalue, value);
+#endif
+
+		return value;
+	}
+
+	/**
+	  * @brief Check whether STL string @a _str is a number and write it's value into the @a _num
+	  */
 	inline bool
 	stringIsInt (const std::string& _str, int& _num)
 	{
@@ -73,7 +104,7 @@ namespace MiniPascal
 	}
 
 	/**
-	  * @brief Convert STL string to the integer number
+	  * @brief Convert STL string @a _str to the integer number
 	  * @return Null if @a _str is not a number
 	  */
 	inline int
