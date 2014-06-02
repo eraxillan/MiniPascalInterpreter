@@ -24,7 +24,7 @@ MpLexer::skipComments (std::istream& f, std::string& line, long& lineIndex)
 	{
 		// DEBUG:
 		//cout << "[" << lineIndex << "]" << " " << "MultiLine Comment begin found." << endl;
-		if ( (iR >= (int) m_mlComments [1].length ()) && (iR != -1) )
+		if ((iR >= (int) m_mlComments [1].length ()) && (iR != -1))
 		{
 			//
 			// Singleline valid comment
@@ -90,10 +90,9 @@ MpLexer::skipComments (std::istream& f, std::string& line, long& lineIndex)
 bool
 MpLexer::isKeyword (const std::string& _token, int& _index) const
 {
-	int i = 0;
-	for ( ; i < 100; i ++)
+	for (int i = 0; i < m_keywords.size (); i ++)
 	{
-		if (_token == m_keywords [i])
+		if (!Poco::UTF8::icompare (_token, m_keywords [i]))
 		{
 			_index = i;
 			return true;
@@ -107,9 +106,9 @@ bool
 MpLexer::isDelimiter (const std::string& _token, int& _index)
 {
 	int i = 0;
-	for ( ; (i < MP_ARR_LEN) && (m_delimeters [i].length ()); i ++)
+	for ( ; i < m_delimeters.size (); i ++)
 	{
-		if (_token == m_delimeters [i])
+		if (!Poco::UTF8::icompare (_token, m_delimeters [i]))
 		{
 			_index = i;
 			return true;
@@ -159,7 +158,10 @@ MpLexer::writeToTable (const std::string& _token, const long& _line_index)
 				long l = 1;
 
 				while ((m_pArrNumber [(i + l*l + l + 1) % MP_ARR_LEN].number != num) &&
-					(m_pArrNumber [(i + l*l + l + 1) % MP_ARR_LEN].number != 0)) l ++;
+					(m_pArrNumber [(i + l*l + l + 1) % MP_ARR_LEN].number != 0))
+				{
+					l++;
+				}
 
 				m_pArrNumber [(i + l*l + l + 1) % MP_ARR_LEN].number = num;
 				m_pArrNumber [(i + l*l + l + 1) % MP_ARR_LEN].count ++;
@@ -239,7 +241,7 @@ MpLexer::writeToTable (const std::string& _token, const long& _line_index)
 	}
 	for (long j = 0L; j < n; j ++)
 	{
-		if (!isalnum (_token [j]))
+		if (!Poco::Unicode::isAlpha (_token [j]) && !Poco::Unicode::isDigit (_token [j]))
 		{
 			m_logstream.error () << "[" << _line_index << "]" << " LEXER ERROR: " << "invalid char " << _token [j] << "." << std::endl;
 			return false;
@@ -261,7 +263,7 @@ MpLexer::writeToTable (const std::string& _token, const long& _line_index)
 	}
 	else
 	{
-		if (m_pArrID [i].id == _token)
+		if (!Poco::UTF8::icompare (m_pArrID [i].id, _token))
 			m_pArrID [i].count ++;
 		else
 		{
@@ -269,7 +271,7 @@ MpLexer::writeToTable (const std::string& _token, const long& _line_index)
 			// Handle the collision
 			//
 			long l = 1;
-			while ((m_pArrID [(i + l) % MP_ARR_LEN].id != _token) &&
+			while ((Poco::UTF8::icompare (m_pArrID [(i + l) % MP_ARR_LEN].id, _token) != 0) &&
 				(!m_pArrID [(i + l) % MP_ARR_LEN].id.empty ()))
 				l++;
 

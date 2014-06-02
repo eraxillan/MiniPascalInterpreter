@@ -102,29 +102,30 @@ MpPolir::convertExpression (const std::string& startL, bool* bIsConst)
 	//
 	// If at least one variable exists in expression, it will be set to "false"
 	//
-	if ( bIsConst )
-		*bIsConst = true;
+	if (bIsConst)
+		(*bIsConst) = true;
 
 	do
 	{
-		if (lexeme == m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
+		if (!Poco::UTF8::icompare (lexeme, m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)))
 		{
-			while (m_opStack.top () != m_lexer->getDelimiter (DELIM_OPEN_BRACKET))
+			while (Poco::UTF8::icompare (m_opStack.top (), m_lexer->getDelimiter (DELIM_OPEN_BRACKET)) != 0)
 			{
 				m_polirExpr.push_back (m_opStack.top ());
 				m_opStack.pop ();
 			}
 
 			//
-			// Delete (
+			// Delete the open bracket
 			//
 			m_opStack.pop ();
 		}
 
 		//
-		// If ID or number (bool are stored as 0 or 1, but lexeme is 'true' or 'false')
+		// If ID or number (bool are internally stored as 0 or 1, but lexeme should be "true" or "false")
 		//
-		if ((isalnum (lexeme [0]) || lexeme [0] == '-') && (m_opPriors.find (lexeme) == m_opPriors.end ()))
+		if ((Poco::Unicode::isAlpha (lexeme [0]) || Poco::Unicode::isDigit (lexeme [0]) || (lexeme [0] == '-'))
+			&& (m_opPriors.find (lexeme) == m_opPriors.end ()))
 		{
 			m_polirExpr.push_back (lexeme);
 
@@ -133,19 +134,24 @@ MpPolir::convertExpression (const std::string& startL, bool* bIsConst)
 			//
 			if (bIsConst)
 			{
-				if (isalpha (lexeme [0]) && (lexeme != "true") && (lexeme != "false"))
-					*bIsConst = false;
+				if (Poco::Unicode::isAlpha (lexeme [0])
+					&& (Poco::UTF8::icompare (lexeme, m_lexer->getKeyword (KEYWORD_TRUE)) != 0)
+					&& (Poco::UTF8::icompare (lexeme, m_lexer->getKeyword (KEYWORD_FALSE)) != 0))
+				{
+					(*bIsConst) = false;
+				}
 			}
 		}
 
-		if (lexeme == m_lexer->getDelimiter (DELIM_OPEN_BRACKET))
+		if (!Poco::UTF8::icompare (lexeme, m_lexer->getDelimiter (DELIM_OPEN_BRACKET)))
 			m_opStack.push (m_lexer->getDelimiter (DELIM_OPEN_BRACKET));
 
 		//
 		// l is operation
 		//
-		if ((m_opPriors.find (lexeme) != m_opPriors.end ()) &&
-			(lexeme != m_lexer->getDelimiter (DELIM_OPEN_BRACKET)) && (lexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)))
+		if ((m_opPriors.find (lexeme) != m_opPriors.end ())
+			&& (Poco::UTF8::icompare (lexeme, m_lexer->getDelimiter (DELIM_OPEN_BRACKET)) != 0)
+			&& (Poco::UTF8::icompare (lexeme, m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)) != 0))
 		{
 			if (m_opStack.empty ())
 				m_opStack.push (lexeme);
@@ -169,7 +175,7 @@ MpPolir::convertExpression (const std::string& startL, bool* bIsConst)
 			}
 		}
 		lexeme = m_lexer->getNextLexeme (NULL);
-	} while (endDelims.find (lexeme) == endDelims.end ());
+	} while (endDelims.find (lexeme) == endDelims.end ());	// while lexeme is not an terminator delimeter
 
 	while (!m_opStack.empty ())
 	{
@@ -185,24 +191,24 @@ void
 MpPolir::convert (const std::string& lexeme)
 {
 	//
-	// Check for type - arithmetic expression or complex such as if
+	// Check for type - arithmetic expression or complex such as "if" statement
 	//
 	char type = 0;
 
 	std::string l = lexeme;
-	if (l == m_lexer->getKeyword (KEYWORD_IF))
+	if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_IF)))
 		type = 1;
-	if (l == m_lexer->getKeyword (KEYWORD_DO))
+	if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_DO)))
 		type = 2;
-	if (l == m_lexer->getKeyword (KEYWORD_READ))
+	if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_READ)))
 		type = 3;
-	if (l == m_lexer->getKeyword (KEYWORD_WRITE))
+	if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_WRITE)))
 		type = 4;
-	if (l == m_lexer->getKeyword (KEYWORD_BEGIN))
+	if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_BEGIN)))
 		type = 5;
-	if (l == m_lexer->getKeyword (KEYWORD_END))
+	if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_END)))
 		type = 6;
-	if (l == m_lexer->getDelimiter (DELIM_PROGRAM_END))
+	if (!Poco::UTF8::icompare (l, m_lexer->getDelimiter (DELIM_PROGRAM_END)))
 		return;
 
 	long lineIndex = 0L;
@@ -230,7 +236,7 @@ MpPolir::convert (const std::string& lexeme)
 
 			l = m_lexer->getLexeme (m_lexer->getCurrentLexemeIndex ());
 
-			if (l == m_lexer->getKeyword (KEYWORD_ELSE))
+			if (!Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_ELSE)))
 			{
 				m_polirExpr.push_back ("_");         // p2 is now unknown.
 				size_t p2Index = m_polirExpr.size () - 1;
@@ -321,9 +327,11 @@ MpPolir::convert (const std::string& lexeme)
 			do
 			{
 				convert (l);
+				l = m_lexer->getNextLexeme (NULL);
 				// DEBUG:
 				//cout << " l = " << l << endl;
-			} while (((l = m_lexer->getNextLexeme (NULL)) != m_lexer->getKeyword (KEYWORD_END)) && (!l.empty ()));
+			} while ((Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_END)) != 0) && !l.empty ());
+
 			m_lexer->getNextLexeme (NULL);
 			break;
 		}
@@ -346,10 +354,13 @@ void
 MpPolir::convertProgram ()
 {
 	//
-	// Search for code block
+	// Search for the code block
 	//
 	std::string l;
-	while ((l = m_lexer->getNextLexeme (NULL) ) != m_lexer->getKeyword (KEYWORD_BEGIN));
+	do
+	{
+		l = m_lexer->getNextLexeme (NULL);
+	} while (Poco::UTF8::icompare (l, m_lexer->getKeyword (KEYWORD_BEGIN)) != 0);
 	//
 	// Now l points to code block begin
 	//
@@ -389,7 +400,8 @@ MpPolir::executeProgram ()
 			std::string condition = varStack.top ();      // condition
 			varStack.pop ();
 
-			if ((condition != m_lexer->getKeyword (KEYWORD_FALSE)) && (condition != "0"))
+			if ((Poco::UTF8::icompare (condition, m_lexer->getKeyword (KEYWORD_FALSE)) != 0)
+				&& (Poco::UTF8::icompare (condition, "0") != 0))
 			{
 				i ++;
 				continue;
@@ -413,12 +425,12 @@ MpPolir::executeProgram ()
 
 		//
 		// +, -, *, /, and, or, not, un, <, <=, =, >=, >, :=, read, write
-		// Check for binary operation, type int.
+		// Check for binary operation, type int
 		//
-		if ((m_polirExpr [i] == m_lexer->getDelimiter (DELIM_PLUS)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MINUS)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MUL)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_DIV)))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_PLUS))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MINUS))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MUL))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_DIV)))
 		{
 			int x, y;
 			std::string sY = varStack.top ();
@@ -426,12 +438,12 @@ MpPolir::executeProgram ()
 			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if (isdigit (sX [0]) || sX [0] == '-')
+			if (Poco::Unicode::isDigit (sX [0]) || (sX [0] == '-'))
 				x = stringToInt (m_logstream, sX);
 			else
 				x = m_vars [sX].value;
 
-			if (isdigit (sY [0]) || sY [0] == '-')
+			if (Poco::Unicode::isDigit (sY [0]) || (sY [0] == '-'))
 				y = stringToInt (m_logstream, sY);
 			else
 				y = m_vars [sY].value;
@@ -439,7 +451,7 @@ MpPolir::executeProgram ()
 			int result = 0;
 			std::string sResult;
 
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_PLUS))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_PLUS)))
 			{
 				//
 				// x y +
@@ -447,7 +459,7 @@ MpPolir::executeProgram ()
 				result = x + y;
 			}
 
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MINUS))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MINUS)))
 			{
 				//
 				// x y -
@@ -455,7 +467,7 @@ MpPolir::executeProgram ()
 				result = x - y;
 			}
 
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MUL))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MUL)))
 			{
 				//
 				// x y *
@@ -463,7 +475,7 @@ MpPolir::executeProgram ()
 				result = x * y;
 			}
 
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_DIV))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_DIV)))
 			{
 				//
 				// x y /
@@ -471,7 +483,7 @@ MpPolir::executeProgram ()
 				if (!y)
 				{
 					m_logstream << "RUNTIME ERROR: divide by zero" << std::endl;
-					std::cin.get ();
+					UnicodeConsole::instance ().pause ();
 					exit (3);
 				}
 
@@ -487,7 +499,8 @@ MpPolir::executeProgram ()
 		//
 		// Check for binary operation, type bool
 		//
-		if ((m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_AND)) || (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_OR)))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_AND))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_OR)))
 		{
 			int x, y;
 			std::string sY = varStack.top ();
@@ -495,19 +508,21 @@ MpPolir::executeProgram ()
 			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if ((sX == "0") || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sX == "0") || !Poco::UTF8::icompare (sX, m_lexer->getKeyword (KEYWORD_FALSE)))
 				x = 0;
 			else
-				if ((sX == "1") || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
+			{
+				if ((sX == "1") || !Poco::UTF8::icompare (sX, m_lexer->getKeyword (KEYWORD_TRUE)))
 					x = 1;
 				else
 					x = m_vars [sX].value;
+			}
 
-			if ((sY == "0") || (sY == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sY == "0") || !Poco::UTF8::icompare (sY, m_lexer->getKeyword (KEYWORD_FALSE)))
 				y = 0;
 			else
 			{
-				if ((sY == "1") || (sY == m_lexer->getKeyword (KEYWORD_TRUE)))
+				if ((sY == "1") || !Poco::UTF8::icompare (sY, m_lexer->getKeyword (KEYWORD_TRUE)))
 					y = 1;
 				else
 					y = m_vars [sY].value;
@@ -516,7 +531,7 @@ MpPolir::executeProgram ()
 			int result = 0;
 			std::string sResult;
 
-			if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_AND))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_AND)))
 			{
 				//
 				// x y and
@@ -524,7 +539,7 @@ MpPolir::executeProgram ()
 				result = x && y;
 			}
 
-			if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_OR))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_OR)))
 			{
 				//
 				// x y or
@@ -541,14 +556,14 @@ MpPolir::executeProgram ()
 		//
 		// Check for unary operation
 		//
-		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_UN))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_UN)))
 		{
 			// x un
 			int x;
 			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if (isdigit (sX [0]) || sX [0] == '-')
+			if (Poco::Unicode::isDigit (sX [0]) || sX [0] == '-')
 				x = stringToInt (m_logstream, sX);
 			else
 				x = m_vars [sX].value;
@@ -561,7 +576,7 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
-		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_NOT))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_NOT)))
 		{
 			//
 			// x not
@@ -570,17 +585,17 @@ MpPolir::executeProgram ()
 			std::string sX = varStack.top ();
 			varStack.pop ();
 
-			if ((sX == "0") || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sX == "0") || !Poco::UTF8::icompare (sX, m_lexer->getKeyword (KEYWORD_FALSE)))
 				x = 0;
 			else
 			{
-				if ((sX == "1") || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
+				if ((sX == "1") || !Poco::UTF8::icompare (sX, m_lexer->getKeyword (KEYWORD_TRUE)))
 					x = 1;
 				else
 					x = m_vars [sX].value;
 			}
 
-			int result = ! x;
+			int result = !x;
 			std::string sResult = intToString (result);
 			varStack.push (sResult);
 
@@ -588,12 +603,12 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
-		if ((m_polirExpr [i] == m_lexer->getDelimiter (DELIM_LESSER)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_EQUAL)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_NOT_EQUAL)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MORE)) ||
-			(m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL)))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_LESSER))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_EQUAL))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_NOT_EQUAL))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MORE))
+			|| !Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL)))
 		{
 			int x = 0, y = 0, result = 0;
 
@@ -605,66 +620,66 @@ MpPolir::executeProgram ()
 			//
 			// x, y can be any - const or var, bool or int
 			//
-			if ((sX == "0") || (sX == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sX == "0") || !Poco::UTF8::icompare (sX, m_lexer->getKeyword (KEYWORD_FALSE)))
 				x = 0;
-			else if ((sX == "1") || (sX == m_lexer->getKeyword (KEYWORD_TRUE)))
+			else if ((sX == "1") || !Poco::UTF8::icompare (sX, m_lexer->getKeyword (KEYWORD_TRUE)))
 				x = 1;
 			else
 			{
-				if (isdigit (sX [0]) || (sX [0] == '-'))
+				if (Poco::Unicode::isDigit (sX [0]) || (sX [0] == '-'))
 					x = stringToInt (m_logstream, sX);
 				else
 					x = m_vars [sX].value;
 			}
 
-			if ((sY == "0") || (sY == m_lexer->getKeyword (KEYWORD_FALSE)))
+			if ((sY == "0") || !Poco::UTF8::icompare (sY, m_lexer->getKeyword (KEYWORD_FALSE)))
 				y = 0;
-			else if ((sY == "1") || (sY == m_lexer->getKeyword (KEYWORD_TRUE)))
+			else if ((sY == "1") || !Poco::UTF8::icompare (sY, m_lexer->getKeyword (KEYWORD_TRUE)))
 				y = 1;
 			else
 			{
-				if (isdigit (sY [0]) || (sY [0] == '-'))
+				if (Poco::Unicode::isDigit (sY [0]) || (sY [0] == '-'))
 					y = stringToInt (m_logstream, sY);
 				else
 					y = m_vars [sY].value;
 			}
 
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_LESSER))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_LESSER)))
 			{
 				//
 				// x y <
 				//
 				result = (x < y);
 			}
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL)))
 			{
 				//
 				// x y <=
 				//
 				result = (x <= y);
 			}
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_EQUAL))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_EQUAL)))
 			{
 				//
 				// x y =
 				//
 				result = (x == y);
 			}
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_NOT_EQUAL))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_NOT_EQUAL)))
 			{
 				//
 				// x y <>
 				//
 				result = (x != y);
 			}
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MORE))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MORE)))
 			{
 				//
 				// x y >
 				//
 				result = (x > y);
 			}
-			if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL))
+			if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL)))
 			{
 				//
 				// x y >=
@@ -678,7 +693,7 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
-		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_READ))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_READ)))
 		{
 			//
 			// id read
@@ -686,17 +701,17 @@ MpPolir::executeProgram ()
 			std::string name = varStack.top ();
 			varStack.pop ();
 
-			std::wstring utype;
-			Poco::UnicodeConverter::toUTF16 (m_vars [name].type, utype);
-			std::wstring uname;
-			Poco::UnicodeConverter::toUTF16 (name, uname);
-			std::wcout << L"\"read\" function was called: please enter "
-				<< utype << " variable \"" << uname << "\" : " << std::endl;
+			std::string out = "\"read\" function was called: please enter ";
+			out += m_vars [name].type;
+			out += " variable \"";
+			out += name;
+			out += "\" : ";
+			UnicodeConsole::instance ().writeLine (out);
 
 			//
 			// Read the value as UTF-8, and convert it to the lower case
 			//
-			std::string value = readConsoleString ();
+			std::string value = UnicodeConsole::instance ().readLine ();
 			Poco::UTF8::toLowerInPlace (value);
 
 			//
@@ -704,7 +719,7 @@ MpPolir::executeProgram ()
 			//
 			if (!Poco::UTF8::icompare (m_vars [name].type, m_lexer->getKeyword (KEYWORD_BOOL)))
 			{
-				if ((value == m_lexer->getKeyword (KEYWORD_FALSE)) || (value == "0"))
+				if ((value == "0") || !Poco::UTF8::icompare (value, m_lexer->getKeyword (KEYWORD_FALSE)))
 					m_vars [name].value = 0;
 				else
 					m_vars [name].value = 1;
@@ -717,37 +732,38 @@ MpPolir::executeProgram ()
 			continue;
 		}
 
-		// FIXME: replace Poco::LogStream to some std::cout-like stream with UTF-8
-		if (m_polirExpr [i] == m_lexer->getKeyword (KEYWORD_WRITE))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getKeyword (KEYWORD_WRITE)))
 		{
 			//
 			// id || const write
 			//
 			std::string sX = varStack.top ();
 			varStack.pop ();
+
+			std::string out = "\"write\" function was called: the result is ";
 			if (m_vars.find (sX) != m_vars.end ())
 			{
-				if (m_vars [sX].type == m_lexer->getKeyword (KEYWORD_BOOL))
-				{
-					if (m_vars [sX].value)
-						m_logstream.debug () << "\"write\" function was called: the result is \"true\"" << std::endl;
-					else
-						m_logstream.debug () << "\"write\" function was called: the result is \"false\"" << std::endl;
-				}
+				if (!Poco::UTF8::icompare (m_vars [sX].type, m_lexer->getKeyword (KEYWORD_BOOL)))
+					out += (m_vars [sX].value ? "true" : "false");
 				else
-					m_logstream.debug () << "\"write\" function was called: the result is \"" << m_vars [sX].value << "\"" << std::endl;
+					out += intToString (m_vars [sX].value);
 			}
 			else
-				m_logstream.debug () << "\"write\" function was called: the result is \"" << sX << "\"" << std::endl;
+			{
+				out += "\"";
+				out += sX;
+				out += "\"";
+			}
 
+			UnicodeConsole::instance ().writeLine (out);
 			i ++;
 			continue;
 		}
 
-		if (m_polirExpr [i] == m_lexer->getDelimiter (DELIM_ASSUME))
+		if (!Poco::UTF8::icompare (m_polirExpr [i], m_lexer->getDelimiter (DELIM_ASSUME)))
 		{
 			//
-			// We haven't any result, just update variable value
+			// We haven't any result here, we just will update the variable value
 			// id const :=
 			//
 			std::string s1 = varStack.top (); // Value.
@@ -758,11 +774,12 @@ MpPolir::executeProgram ()
 			//
 			// Update value
 			//
-			if (s1 == m_lexer->getKeyword (KEYWORD_FALSE))
+			if (!Poco::UTF8::icompare (s1, m_lexer->getKeyword (KEYWORD_FALSE)))
 				m_vars [s2].value = 0;
+			if (!Poco::UTF8::icompare (s1, m_lexer->getKeyword (KEYWORD_TRUE)))
 			if (s1 == m_lexer->getKeyword (KEYWORD_TRUE))
 				m_vars [s2].value = 1;
-			if (isdigit (s1 [0]) || s1 [0] == '-')
+			if (Poco::Unicode::isDigit (s1 [0]) || (s1 [0] == '-'))
 			{
 				m_vars [s2].value = stringToInt (m_logstream, s1);
 

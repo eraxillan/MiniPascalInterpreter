@@ -216,7 +216,7 @@ protected:
 			if (mp_sources.empty ())
 			{
 				ls.error () << "ERROR: Pascal source code file was not specified" << std::endl;
-				std::cin.get ();
+				UnicodeConsole::instance ().pause ();
 				exit (0);
 			}
 
@@ -226,7 +226,7 @@ protected:
 			std::unique_ptr<MpLexer> lex (new MpLexer (ls));
 			if (!lex->loadConfig (config ()))
 			{
-				std::cin.get ();
+				UnicodeConsole::instance ().pause ();
 				return 1;
 			}
 
@@ -235,14 +235,14 @@ protected:
 				//
 				// Set the appropriate console window title
 				//
-				setConsoleTitle (Poco::Path (src).getFileName () + " - MiniPascal interpreter");
+				UnicodeConsole::instance ().setTitle (Poco::Path (src).getFileName () + " - MiniPascal interpreter");
 
 				//
 				// Extract lexemes from source
 				//
 				if (!lex->loadFile (src))
 				{
-					std::cin.get ();
+//					UnicodeConsole::instance ().pause ();
 					break;
 				}
 
@@ -252,14 +252,14 @@ protected:
 				if (!m_lexeme_file.empty ())
 					lex->saveLexemeFile (m_lexeme_file);
 
-				std::cin.get ();
+				UnicodeConsole::instance ().pause ();
 
 				//
 				// Create and initialize parser
 				//
 				std::unique_ptr<MpParser> psr (new MpParser (lex.get (), ls));
 				psr->parse ();
-				std::cin.get ();
+				UnicodeConsole::instance ().pause ();
 
 				//
 				// Create and initialize POLIR converter and interpreter
@@ -280,7 +280,7 @@ protected:
 			}
 		}
 
-		std::cin.get ();
+		UnicodeConsole::instance ().pause ();
 		return Application::EXIT_OK;
 	}
 };

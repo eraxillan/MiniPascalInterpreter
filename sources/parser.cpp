@@ -14,7 +14,7 @@ MpParser::ERR (const std::string& _text)
 {
 	m_logstream.error () << "[" << m_iCurrLine << "] " << "Syntax error: " << _text << std::endl;
 
-	std::cin.get ();
+	UnicodeConsole::instance ().pause ();
 	exit (1);
 }
 
@@ -23,7 +23,7 @@ MpParser::ERR2 (const std::string& _text)
 {
 	m_logstream.error () << "[" << m_iCurrLine << "] " << "Semantic error: " << _text << std::endl;
 
-	std::cin.get ();
+	UnicodeConsole::instance ().pause ();
 	exit (2);
 }
 
@@ -50,8 +50,8 @@ MpParser::P ()
 	//
 	// "Program" keyword
 	//
-	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_PROGRAM))
-		ERR ("Keyword \"program\" expected.");
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_PROGRAM)) != 0)
+		ERR ("Keyword \"program\" expected");
 	else
 		GC ();
 
@@ -68,9 +68,9 @@ MpParser::P ()
 	//
 	// Check for "."
 	//
-	if ( m_sCurrLexeme != m_lexer->getDelimiter (DELIM_PROGRAM_END) )
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_PROGRAM_END)) != 0)
 	{
-		ERR ("\".\" expected.");
+		ERR ("\".\" expected");
 	}
 }
 
@@ -82,7 +82,7 @@ MpParser::D1 ()
 {
 	INFO ("D1");
 
-	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_VAR))
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_VAR)) != 0)
 		ERR ("Keyword \"var\" expected.");
 	else
 		GC ();
@@ -99,7 +99,7 @@ MpParser::D2 ()
 	INFO ("D2");
 
 	if (m_validVars.find (m_sCurrLexeme) != m_validVars.end ())
-		ERR2 ("Duplicate identifier.");
+		ERR2 ("Duplicate identifier");
 
 	//
 	// Mark variable as already declared
@@ -110,9 +110,9 @@ MpParser::D2 ()
 	GC ();
 
 	//
-	// One more variable is present?
+	// One or more variables are present?
 	//
-	if (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_COMMA))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_COMMA)))
 	{
 		GC ();
 		D2 ();
@@ -122,17 +122,18 @@ MpParser::D2 ()
 	//
 	// Read the variable data type info
 	//
-	if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_TYPE))
-		ERR ("\":\" expected.");
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_TYPE)) != 0)
+		ERR ("\":\" expected");
 	else
 		GC ();
 
 	//
 	// Validate the variable data type
 	//
-	if ((m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_BOOL)) && (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_INT)))
+	if ((Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_BOOL)) != 0)
+		&& (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_INT)) != 0))
 	{
-		ERR ("Unknown type.");
+		ERR ("Unknown variable data type");
 	}
 
 	//
@@ -148,9 +149,9 @@ MpParser::D2 ()
 	//
 	// Check for ";"
 	//
-	if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPERATOR_END))
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_OPERATOR_END)) != 0)
 	{
-		ERR ("\";\" expected.");
+		ERR ("\";\" expected");
 	}
 	else
 		GC ();
@@ -158,7 +159,7 @@ MpParser::D2 ()
 	//
 	// Another "var" block is present?
 	//
-	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_BEGIN))
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_BEGIN)) != 0)
 		D2 ();
 }
 
@@ -170,24 +171,24 @@ MpParser::B (bool main)
 {
 	INFO ("B");
 
-	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_BEGIN))
-		ERR ("Keyword \"begin\" expected.");
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_BEGIN)) != 0)
+		ERR ("Keyword \"begin\" expected");
 	else
 		GC ();
 
-	while ((m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_END)) && (!m_sCurrLexeme.empty ()))
+	while ((Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_END)) != 0) && !m_sCurrLexeme.empty ())
 	{
 		// DEBUG:
 		//cout << "-------------------" << endl;
 		S ();
 
-		if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_END))
+		if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_END)))
 			break;
 
-		if (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
+		if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)))
 			ERR ("\"(\" expected.");
 
-		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPERATOR_END))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_OPERATOR_END)) != 0)
 		{
 			// DEBUG:
 			//cout << "DEBUG: " << "In B (), CH = " << CH << endl;
@@ -200,7 +201,7 @@ MpParser::B (bool main)
 		//cout << "--------------------" << endl;
 	}
 
-	if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_END))
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_END)) != 0)
 		ERR ("Keyword \"end\" expected");
 
 	GC ();
@@ -217,30 +218,30 @@ MpParser::S ()
 	//
 	// Syntax: if E then S else S
 	//
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_IF))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_IF)))
 	{
 		GC ();
 		E ();
 
 		//
-		// Check data type: only bool variable can be used in "if"
+		// Check data type: only boolean expression can be used in "if"
 		//
 		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
-		if (t != m_lexer->getKeyword (KEYWORD_BOOL))
-			ERR2 ("if statement require bool expression");
+		if (Poco::UTF8::icompare (t, m_lexer->getKeyword (KEYWORD_BOOL)) != 0)
+			ERR2 ("\"if\" statement require bool expression");
 
-		if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_THEN))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_THEN)) != 0)
 			ERR ("Keyword \"then\" expected");
 		else
 			GC ();
 
 		S ();
 
-		if (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_OPERATOR_END))
+		if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_OPERATOR_END)))
 			return;
 
-		if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_ELSE))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_ELSE)) != 0)
 			ERR ("Keyword \"else\" or \";\" expected");
 		else
 			GC ();
@@ -252,13 +253,13 @@ MpParser::S ()
 	//
 	// do S while E
 	//
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_DO))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_DO)))
 	{
 		GC ();
 		S ();
 		GC ();
 
-		if (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_WHILE))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_WHILE)) != 0)
 			ERR ("Keyword \"while\" expected");
 		else
 			GC ();
@@ -270,8 +271,8 @@ MpParser::S ()
 		//
 		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
-		if (t != m_lexer->getKeyword (KEYWORD_BOOL))
-			ERR2 ("while statement require bool expression.");
+		if (Poco::UTF8::icompare (t, m_lexer->getKeyword (KEYWORD_BOOL)) != 0)
+			ERR2 ("\"while\" statement require bool expression");
 
 		return;
 	}
@@ -279,7 +280,7 @@ MpParser::S ()
 	//
 	// begin S; S; ... end
 	//
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_BEGIN))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_BEGIN)))
 	{
 		B (false);
 		return;
@@ -288,18 +289,18 @@ MpParser::S ()
 	//
 	// read (I)
 	//
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_READ))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_READ)))
 	{
 		GC ();
-		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPEN_BRACKET) )
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_OPEN_BRACKET)) != 0)
 			ERR ("\"(\" expected");
 		else
 			GC ();
 
 		I ();
 
-		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
-			ERR ("\")\" expected.");
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)) != 0)
+			ERR ("\")\" expected");
 		else
 			GC ();
 
@@ -309,18 +310,18 @@ MpParser::S ()
 	//
 	// write (E)
 	//
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_WRITE))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_WRITE)))
 	{
 		GC ();
 
-		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_OPEN_BRACKET))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_OPEN_BRACKET)) != 0)
 			ERR ("\"(\" expected.");
 		else
 			GC ();
 
 		E ();
 
-		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)) != 0)
 			ERR ("\")\" expected.");
 		else
 			GC ();
@@ -330,7 +331,7 @@ MpParser::S ()
 
 	//
 	// I := E
-	// Check identifier: it must be declared earlier in "var" block
+	// Check identifier: it must be declared earlier in the "var" block
 	//
 	if (m_validVars.find (m_sCurrLexeme) == m_validVars.end ())
 		ERR2 ("Unknown identifier");
@@ -340,7 +341,7 @@ MpParser::S ()
 	//
 	// Check for ":="
 	//
-	if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_ASSUME) )
+	if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_ASSUME)) != 0)
 		ERR ("\":=\" expected");
 	else
 		GC ();
@@ -355,7 +356,7 @@ MpParser::S ()
 	m_exprOpType.pop ();
 	t2 = m_exprOpType.top ();
 	m_exprOpType.pop ();
-	if (t1 != t2)
+	if (Poco::UTF8::icompare (t1, t2) != 0)
 		ERR2 ("Type mismatch in assign operator");
 }
 
@@ -369,9 +370,12 @@ MpParser::E ()
 
 	E1 ();
 
-	if ((m_sCurrLexeme == m_lexer->getDelimiter (DELIM_EQUAL)) || (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_NOT_EQUAL) ) ||
-		(m_sCurrLexeme == m_lexer->getDelimiter (DELIM_LESSER) ) || (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL) ) ||
-		(m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MORE) ) || (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL)))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_EQUAL))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_NOT_EQUAL))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_LESSER))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_LESSER_OR_EQUAL))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_MORE))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_MORE_OR_EQUAL)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -392,7 +396,7 @@ MpParser::E ()
 		//
 		// Compare operators need only t1 = t2
 		//
-		if (t1 == t2)
+		if (!Poco::UTF8::icompare (t1, t2))
 			m_exprOpType.push (m_opTypes [op].typeResult);
 		else
 			ERR2 ("Type mismatch: operation " + op + " need equal types.");
@@ -410,8 +414,8 @@ MpParser::E1 ()
 	INFO ("E1");
 	T ();
 
-	if ((m_sCurrLexeme == m_lexer->getDelimiter (DELIM_PLUS))
-		|| (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MINUS)))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_PLUS))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_MINUS)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -425,7 +429,7 @@ MpParser::E1 ()
 		return;
 	}
 
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_OR))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_OR)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -450,8 +454,8 @@ MpParser::T ()
 	INFO ("T");
 	F ();
 
-	if ( (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_MUL))
-		|| (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_DIV)))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_MUL))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter(DELIM_DIV)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -461,7 +465,7 @@ MpParser::T ()
 		return;
 	}
 
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_AND))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_AND)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -480,7 +484,7 @@ MpParser::F ()
 {
 	INFO ("F");
 
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_NOT))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_NOT)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -489,8 +493,8 @@ MpParser::F ()
 
 		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
-		if (t != m_lexer->getKeyword (KEYWORD_BOOL))
-			ERR2 ("not operator needs bool operand");
+		if (Poco::UTF8::icompare (t, m_lexer->getKeyword (KEYWORD_BOOL)) != 0)
+			ERR2 ("\"not\" operator needs bool operand");
 		//
 		// Remove "not" from stack
 		//
@@ -503,7 +507,7 @@ MpParser::F ()
 		return;
 	}
 
-	if (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_UN))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_UN)))
 	{
 		m_exprOpType.push (m_sCurrLexeme);
 
@@ -515,7 +519,7 @@ MpParser::F ()
 		//
 		std::string t = m_exprOpType.top ();
 		m_exprOpType.pop ();
-		if (t != m_lexer->getKeyword (KEYWORD_INT))
+		if (Poco::UTF8::icompare (t, m_lexer->getKeyword (KEYWORD_INT)) != 0)
 			ERR2 ("un operator needs int operand");
 		//
 		// Remove "un" from stack
@@ -529,12 +533,12 @@ MpParser::F ()
 		return;
 	}
 
-	if (m_sCurrLexeme == m_lexer->getDelimiter (DELIM_OPEN_BRACKET))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_OPEN_BRACKET)))
 	{
 		GC ();
 		E ();
 
-		if (m_sCurrLexeme != m_lexer->getDelimiter (DELIM_CLOSE_BRACKET))
+		if (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getDelimiter (DELIM_CLOSE_BRACKET)) != 0)
 			ERR ("\")\" expected");
 		else
 			GC ();
@@ -542,7 +546,8 @@ MpParser::F ()
 		return;
 	}
 
-	if ((m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_TRUE)) || (m_sCurrLexeme == m_lexer->getKeyword (KEYWORD_FALSE)))
+	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_TRUE))
+		|| !Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_FALSE)))
 	{
 		L ();
 		return;
@@ -567,7 +572,8 @@ MpParser::L ()
 
 	m_exprOpType.push (m_lexer->getKeyword (KEYWORD_BOOL));
 
-	if ((m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_TRUE)) && (m_sCurrLexeme != m_lexer->getKeyword (KEYWORD_FALSE)))
+	if ((Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_TRUE)) != 0)
+		&& (Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_FALSE)) != 0))
 		ERR ("Type mismatch");
 	else
 		GC ();
@@ -634,8 +640,11 @@ MpParser::checkTypes ()
 	//
 	// Use binary operators types table
 	//
-	if ( (t1 == m_opTypes [op].type1) && (t2 ==  m_opTypes [op].type2) )
+	if (!Poco::UTF8::icompare (t1, m_opTypes [op].type1)
+		&& !Poco::UTF8::icompare (t2, m_opTypes [op].type2))
+	{
 		m_exprOpType.push (m_opTypes [op].typeResult);
+	}
 	else
 		ERR2 ("Type mismatch: operation " + op
 		+ " need types " + m_opTypes [op].type1

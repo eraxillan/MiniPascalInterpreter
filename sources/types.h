@@ -7,7 +7,17 @@
 #ifndef __MINIPASCAL_TYPES_H
 #define __MINIPASCAL_TYPES_H
 
+//
+// Eliminate "no secure" warnings under MSVC
+//
+#ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 //
 // C++ STL headers
@@ -27,6 +37,9 @@
 //
 // POCO headers
 //
+
+// Memory
+#include <Poco/SingletonHolder.h>
 
 // String operations
 #include <Poco/UTF8String.h>
@@ -61,38 +74,114 @@
 #endif // ! POCO_WIN32_UTF8 
 #endif
 
+//
+// Make various max() functions compilable;
+// (otherwise it will be overrided by the "max" macro from C stdlib)
+//
+#undef max
+
 namespace MiniPascal
 {
 	struct MpVariable;
 	struct MpOpTypes;
 
-	/**
-	  * @brief Read the string value from @a std::cin and return it as UTF-8 encoded
-	  * @note Under Windows function assume that @a chcp or @a SetConsoleCP function was not called,
-	  * and default OEM encoding still used in the console
-	  */
-	inline std::string
-	readConsoleString ()
+	class UnicodeConsole
 	{
-		//
-		// Under Unix this simple stream read operation is enough
-		//
-		std::string value;
-		std::cin >> value;
+		//UnicodeConsole ();
 
-		//
-		// NOTE: But under Windows we have to do TWO conversions: OEM codepage --> UTF-16 and UTF-16 --> UTF8
-		//
+	public:
+		// FIXME: Poco SingletonHolder create object using it's constructor;
+		// it break Singleton pattern "purity", i.e. client can create it's own instance of class
+		UnicodeConsole ()
+		{
 #ifdef _WIN32
-		std::wstring uvalue;
-		uvalue.resize (value.size ());
-		OemToCharW (value.data (), &uvalue [0]);
+			//
+			// Change the console mode to the UTF-16 (it is OEM by default, e.g. ibm-866 for Russian OS)
+			//
+			fflush (stdout);
+			fflush (stdin);
+			_setmode (_fileno (stdout), _O_U16TEXT);
+			_setmode (_fileno (stdin), _O_U16TEXT);
+#endif
+		}
 
-		Poco::UnicodeConverter::toUTF8 (uvalue, value);
+		static UnicodeConsole& instance ()
+		{
+			static Poco::SingletonHolder<UnicodeConsole> sh;
+			return (*sh.get ());
+		}
+
+		inline void
+		writeLine (const std::string& _value)
+		{
+#ifdef _WIN32
+			//
+			// NOTE: Under Windows we have to convert our UTF-8 string to UTF-16 encoded one
+			//
+			std::wstring uvalue;
+			Poco::UnicodeConverter::toUTF16 (_value, uvalue);
+
+			std::wcout << uvalue << std::endl;
+#else
+			//
+			// Under Unix we just write the string value "as is"
+			//
+			std::cout << _value << std::endl;
+#endif
+		}
+
+		/**
+		  * @brief Read the string value from @a std::cin and return it as UTF-8 encoded
+		  * @note Under Windows function assume that console support UTF-16
+		  */
+		inline std::string
+		readLine ()
+		{
+			std::string value;
+			
+			//
+			// NOTE: Under Windows we have to convert user entered UTF-16 string to UTF-8 encoded one
+			//
+#ifdef _WIN32
+			std::wstring uvalue;
+			std::wcin >> uvalue;
+			
+			Poco::UnicodeConverter::toUTF8 (uvalue, value);
+#else
+			//
+			// Under Unix we just read the string value "as is"
+			//
+			std::cin >> value;
 #endif
 
-		return value;
-	}
+			return value;
+		}
+
+		/**
+		* @brief Set the console window title
+		*/
+		inline void
+		setTitle (const std::string& _text)
+		{
+#ifdef _WIN32
+			std::wstring utext;
+			Poco::UnicodeConverter::toUTF16 (_text, utext);
+			SetConsoleTitleW (utext.data ());
+#else
+			// TODO: test this under Unix terminals
+			printf ("%c]0;%s%c", '\033', _text.data (), '\007');
+#endif // _WIN32
+		}
+
+		inline void
+		pause ()
+		{
+			std::wcout << L"Press any key to continue..." << std::endl;
+			std::wcin.clear ();
+			std::wcin.sync ();
+			std::wcin.get ();
+		}
+	};
 
 	/**
 	  * @brief Check whether STL string @a _str is a number and write it's value into the @a _num
@@ -131,25 +220,6 @@ namespace MiniPascal
 	intToString (int _num)
 	{
 		return Poco::NumberFormatter::format (_num);
-	}
-
-	/**
-	  * @brief Set the console window title
-	  */
-	inline void setConsoleTitle (const std::string& _text)
-	{
-#ifdef _WIN32
-#ifdef _UNICODE
-		std::wstring utext;
-		Poco::UnicodeConverter::toUTF16 (_text, utext);
-		SetConsoleTitleW (utext.data ());
-#else
-		SetConsoleTitleA (text);
-#endif // _UNICODE
-#else
-		// TODO: test this under Unix terminals
-		printf ("%c]0;%s%c", '\033', _text.data (), '\007');
-#endif // _WIN32
 	}
 
 	//
