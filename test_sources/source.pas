@@ -1,11 +1,11 @@
 
 program
 var k, f : int;
-    notUsed : int; // пример предупреждения о неиспользуемой переменной
+    notUsed : int; // Unusable variable warning example
 begin
-   // Однострочный комментарий
+   // Single line comment example
 begin
-   // Factorial
+   // Factorial calculation
    read (k);
    if k = 0 then k := 1;
    f := 1;

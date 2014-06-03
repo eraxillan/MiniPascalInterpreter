@@ -1,14 +1,14 @@
 /**
- * @file
- * @brief The interface of syntax analyzer
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */   
+  * @file
+  * @brief The interface of syntax analyzer
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */   
 
 #ifndef __MINIPASCAL_PARSER_H
 #define __MINIPASCAL_PARSER_H
 
-#include "types.h"
-#include "lexer.h"
+#include "Types.hpp"
+#include "Lexer.hpp"
 
 namespace MiniPascal
 {

@@ -56,6 +56,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -71,6 +72,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -80,19 +82,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="sources\lexer.h" />
-    <ClInclude Include="sources\parser.h" />
-    <ClInclude Include="sources\polir.h" />
-    <ClInclude Include="sources\types.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="sources\lexer.cpp" />
-    <ClCompile Include="sources\main.cpp" />
-    <ClCompile Include="sources\parser.cpp" />
-    <ClCompile Include="sources\polir.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="test_sources\source.pas" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\Lexer.hpp" />
+    <ClInclude Include="include\Parser.hpp" />
+    <ClInclude Include="include\Polir.hpp" />
+    <ClInclude Include="include\StringUtil.hpp" />
+    <ClInclude Include="include\Types.hpp" />
+    <ClInclude Include="include\UnicodeConsole.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Lexer.cpp" />
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\Parser.cpp" />
+    <ClCompile Include="src\Polir.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

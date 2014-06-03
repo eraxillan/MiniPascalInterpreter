@@ -1,14 +1,14 @@
 /**
- * @file
- * @brief The interface of POLIR converter and interpreter
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */
+  * @file
+  * @brief The interface of POLIR converter and interpreter
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */
 
 #ifndef __MINIPASCAL_POLIR_H
 #define __MINIPASCAL_POLIR_H
 
-#include "lexer.h"
-#include "parser.h"
+#include "Lexer.hpp"
+#include "Parser.hpp"
 
 namespace MiniPascal
 {

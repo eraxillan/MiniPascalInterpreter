@@ -1,10 +1,12 @@
 /**
- * @file
- * @brief The interpreter entry point
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */
+  * @file
+  * @brief The MinPascal interpreter entry point
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */
 
-#include "polir.h"
+#include "StringUtil.hpp"
+#include "UnicodeConsole.hpp"
+#include "Polir.hpp"
 
 #include <memory>
 #include <vector>
@@ -194,6 +196,7 @@ protected:
 			if (m_verbose_mode)
 			{
 				logger ().setLevel (Poco::Message::PRIO_DEBUG);
+				UnicodeConsole::instance ().enablePause ();
 				ls.debug () << "Verbose mode was enabled" << std::endl;
 
 				//

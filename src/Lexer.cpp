@@ -1,12 +1,12 @@
 /**
- * @file
- * @brief The implementation of lexical analyzer
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */   
-#include <Poco/StringTokenizer.h>
+  * @file
+  * @brief The implementation of lexical analyzer
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */
 
-#include "types.h"
-#include "lexer.h"
+#include "StringUtil.hpp"
+#include "Types.hpp"
+#include "Lexer.hpp"
 
 using namespace MiniPascal;
 

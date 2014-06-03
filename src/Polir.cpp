@@ -1,11 +1,13 @@
 /**
- * @file
- * @brief The implementation of POLIR converter and interpreter
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */   
+  * @file
+  * @brief The implementation of POLIR converter and interpreter
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */   
 
-#include "polir.h"
-using namespace std;
+#include "StringUtil.hpp"
+#include "UnicodeConsole.hpp"
+#include "Polir.hpp"
+
 using namespace MiniPascal;
 
 //
@@ -92,7 +94,7 @@ MpPolir::convertExpression (const std::string& startL, bool* bIsConst)
 	//
 	// What lexemes are the expression end markers?
 	//
-	set <std::string, less<std::string>> endDelims;
+	std::set <std::string, std::less<std::string>> endDelims;
 	endDelims.insert (m_lexer->getKeyword (KEYWORD_WHILE));
 	endDelims.insert (m_lexer->getKeyword (KEYWORD_THEN));
 	endDelims.insert (m_lexer->getKeyword (KEYWORD_ELSE));
@@ -376,7 +378,7 @@ MpPolir::convertProgram ()
 	m_logstream.debug () << "POLIR: Convertion done, no errors" << std::endl;
 	for (std::size_t i = 0; i < m_polirExpr.size (); i ++)
 		m_logstream.debug () << m_polirExpr [i] << " ";
-	m_logstream.debug () << endl;
+	m_logstream.debug () << std::endl;
 }
 
 void
@@ -385,7 +387,7 @@ MpPolir::executeProgram ()
 	//
 	// Operands stack: contain integer/boolean constants and integer/boolean variables
 	//
-	stack <std::string> varStack;
+	std::stack <std::string> varStack;
 
 	unsigned int i = 0;
 	while (i < m_polirExpr.size ())

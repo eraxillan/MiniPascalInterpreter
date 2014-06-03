@@ -1,11 +1,13 @@
 /**
- * @file
- * @brief The implementation of syntax analyzer
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */   
+  * @file
+  * @brief The implementation of syntax analyzer
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */   
 
-#include "lexer.h"
-#include "parser.h"
+#include "StringUtil.hpp"
+#include "UnicodeConsole.hpp"
+#include "Lexer.hpp"
+#include "Parser.hpp"
 
 using namespace MiniPascal;
 

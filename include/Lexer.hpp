@@ -1,15 +1,15 @@
 /**
- * @file
- * @brief The interface of lexical analyzer
- * @author Alexander Kamyshnikov <axill777@gmail.com>
- */   
+  * @file
+  * @brief The interface of lexical analyzer
+  * @author Alexander Kamyshnikov <axill777@gmail.com>
+  */   
 
 #ifndef __MINIPASCAL_LEXER_H
 #define __MINIPASCAL_LEXER_H
 
 #include <Poco/Util/LayeredConfiguration.h>
 
-#include "types.h"
+#include "Types.hpp"
 
 namespace MiniPascal
 {
