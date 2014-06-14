@@ -23,13 +23,6 @@ namespace MiniPascal
 	{
 		bool m_pause_enabled = false;
 
-		//UnicodeConsole ();
-
-	public:
-		//
-		// FIXME: Poco SingletonHolder create object using it's constructor;
-		// it break Singleton pattern "purity", i.e. client can create it's own instance of class
-		//
 		UnicodeConsole ()
 		{
 #ifdef _WIN32
@@ -47,19 +40,38 @@ namespace MiniPascal
 #endif
 		}
 
+		~UnicodeConsole () = default;
+
+	public:
+		UnicodeConsole (const UnicodeConsole&) = delete;
+		UnicodeConsole& operator = (const UnicodeConsole&) = delete;
+
+		void* operator new (std::size_t) = delete;
+		void* operator new[] (std::size_t) = delete;
+
+		void operator delete (void*) = delete;
+		void operator delete[] (void*) = delete;
+
 		static UnicodeConsole& instance ()
 		{
-			static Poco::SingletonHolder<UnicodeConsole> sh;
-			return (*sh.get ());
+			//
+			// NOTE: The (C++11) standard already guarantees that static variables are initialized
+			// in a threadsafe manner and it seems likely that the implementation of this at least 
+			// as robust and performant as anything you'd write yourself.
+			// The threadsafety of the initialization can be found in §6.7.4 of the (C++11) standard:
+			// If control enters the declaration concurrently while the variable is being initialized, 
+			// the concurrent execution shall wait for completion of the initialization
+			//
+			static UnicodeConsole uc;
+			return uc;
 		}
-
 
 		/**
 		  * @brief Write the specified UTF-8 string to the @a std::cout
 		  * @note Under Windows function do the UTF-8 --> UTF-16 conversion
 		  */
 		void
-		writeLine (const std::string& _value)
+		writeLine (const std::string& _value) const
 		{
 #ifdef _WIN32
 			//
@@ -84,7 +96,7 @@ namespace MiniPascal
 		  * @note Under Windows function do the UTF-16 --> UTF-8 conversion
 		  */
 		std::string
-		readLine ()
+		readLine () const
 		{
 			std::string value;
 
@@ -111,7 +123,7 @@ namespace MiniPascal
 		  * @param[in] _text The new console title (UTF-8 encoded)
 		  */
 		void
-		setTitle (const std::string& _text)
+		setTitle (const std::string& _text) const
 		{
 #ifdef _WIN32
 			std::wstring utext;
@@ -136,7 +148,7 @@ namespace MiniPascal
 		  * @note Use this crossplatform solution instead of Windows-only @a system ("pause")
 		  */
 		void
-		pause ()
+		pause () const
 		{
 			if (m_pause_enabled)
 			{

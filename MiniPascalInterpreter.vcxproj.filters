@@ -19,10 +19,19 @@
     <Filter Include="Test sources">
       <UniqueIdentifier>{f7d3efff-ac41-4690-a5e5-bc0f01113a29}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Documents">
+      <UniqueIdentifier>{c0306595-6e26-450a-992a-063fe07721c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="test_sources\source.pas">
       <Filter>Test sources</Filter>
+    </None>
+    <None Include="LICENSE">
+      <Filter>Documents</Filter>
+    </None>
+    <None Include="README.md">
+      <Filter>Documents</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

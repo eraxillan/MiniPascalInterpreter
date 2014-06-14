@@ -51,11 +51,26 @@
 #endif
 
 //
+// Test compiler for C++11 support
+//
+// NOTE: VC++ not set this constant yet to the proper value, however it support most of the usable C++11 features
+//
+//#if __cplusplus <= 199711L
+//#error This library needs at least a C++11 compliant compiler
+//#endif
+
+#ifdef _WIN32
+#ifndef _HAS_CPP0X
+#error "MiniPascalInterpreter use many of C++11 features, so your compiler must support it!"
+#endif
+#endif
+
+//
 // Check whether Poco was compiled with UTF-8 encoding support
 //
 #ifdef _WIN32
 #ifndef POCO_WIN32_UTF8
-#error "MiniPascalInterpreter will work only with UTF-8 encoding! Please compile PoCo with POCO_WIN32_UTF8 defined"
+#error "MiniPascalInterpreter designed to work only with the UTF-8 encoding! Please compile PoCo with POCO_WIN32_UTF8 defined"
 #endif // ! POCO_WIN32_UTF8 
 #endif
 
@@ -67,12 +82,12 @@ namespace MiniPascal
 	//
     // Complex STL map and set types for lexer, parser, polir
 	//
-	typedef std::map <std::string, MpVariable, std::less <std::string> > MpVariableMap;
-	typedef std::set < char, std::less <char> > MpDigitsSet;
+	typedef std::map <std::string, MpVariable, std::less <std::string>> MpVariableMap;
+	typedef std::set <char, std::less <char>> MpDigitsSet;
 	typedef MpDigitsSet MpLettersSet;
-	typedef std::set < std::string, std::less <std::string> > MpStringsSet;
-	typedef std::map < std::string, std::string, std::less <std::string> > MpStringsDict;
-	typedef std::map < std::string, MpOpTypes, std::less <std::string> > MpTypesDict;
+	typedef std::set <std::string, std::less <std::string>> MpStringsSet;
+	typedef std::map <std::string, std::string, std::less <std::string>> MpStringsDict;
+	typedef std::map <std::string, MpOpTypes, std::less <std::string>> MpTypesDict;
 
 	/**
 	  * @struct MpVariable
