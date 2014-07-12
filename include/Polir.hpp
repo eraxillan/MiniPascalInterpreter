@@ -70,6 +70,8 @@ namespace MiniPascal
 		void connectLexer (MpLexer* pLexer);
 		void connectParser (MpParser* pParser);
 
+		MP_DISABLE_COPY (MpPolir)
+
 	public:
 		explicit MpPolir (MpLexer* _lexer, MpParser* _parser, Poco::LogStream& _logstream);
 

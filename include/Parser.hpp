@@ -34,7 +34,7 @@ namespace MiniPascal
 		/**
 	      * @brief Current line index
 	      */
-		long     m_iCurrLine;
+		std::size_t m_iCurrLine;
 
 		/**
 	      * @brief 0...9 set
@@ -102,7 +102,7 @@ namespace MiniPascal
 		/**
 	      * @brief Code block handler
 	      */
-		void B (bool main);
+		void B ();
 		
 		/**
 	      * @brief Main program text handler
@@ -150,6 +150,8 @@ namespace MiniPascal
 		  * @note Shutdown program on failure
 	      */
 		void checkTypes ();
+
+		MP_DISABLE_COPY (MpParser)
 
 		// FIXME: remove public access for those vars
 	public:

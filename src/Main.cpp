@@ -62,7 +62,7 @@ protected:
 		//
 		// Load default configuration files, if present
 		//
-		auto ini_loaded_cnt = loadConfiguration ();
+		loadConfiguration ();
 		Application::initialize (_self);
 
 		//
@@ -120,6 +120,9 @@ protected:
 
 	void handleVerbose (const std::string& _name, const std::string& _value)
 	{
+		MP_UNUSED_ARG (_name)
+		MP_UNUSED_ARG (_value)
+
 		//
 		// Save the verbose mode state
 		//
@@ -128,6 +131,9 @@ protected:
 
 	void handleLexemeFile (const std::string& _name, const std::string& _value)
 	{
+		MP_UNUSED_ARG (_name)
+		MP_UNUSED_ARG (_value)
+
 		//
 		// Save the lexeme file name
 		//
@@ -136,6 +142,9 @@ protected:
 
 	void handlePolirFile (const std::string& _name, const std::string& _value)
 	{
+		MP_UNUSED_ARG (_name)
+		MP_UNUSED_ARG (_value)
+
 		//
 		// Save the POLIR file name
 		//
@@ -144,6 +153,9 @@ protected:
 
 	void handleHelp (const std::string& _name, const std::string& _value)
 	{
+		MP_UNUSED_ARG (_name)
+		MP_UNUSED_ARG (_value)
+
 		m_help_requested = true;
 
 		displayHelp ();
@@ -152,6 +164,8 @@ protected:
 
 	void handleConfig (const std::string& _name, const std::string& _value)
 	{
+		MP_UNUSED_ARG (_name)
+
 		loadConfiguration (_value);
 	}
 
@@ -183,7 +197,6 @@ protected:
 			pattern_formatter->setProperty ("pattern", "[%H:%M:%S] [%p] %t");
 			Poco::AutoPtr<Poco::FormattingChannel> formatting_channel (new Poco::FormattingChannel (pattern_formatter, color_channel));
 			logger ().setChannel (formatting_channel);
-			//			logger ().setChannel (color_channel);
 
 			//
 			// Create stream interface object for STL stream-like output

@@ -11,20 +11,19 @@
 using namespace MiniPascal;
 
 bool
-MpLexer::skipComments (std::istream& f, std::string& line, long& lineIndex)
+MpLexer::skipComments (std::istream& f, std::string& line, std::size_t& lineIndex)
 {
 	//
 	// Skip multiline comments
 	//
-	int iL, iR;
-	iL = line.find (m_mlComments [0], 0);
-	iR = line.find (m_mlComments [1], 0);
+	std::size_t iL = line.find (m_mlComments [0], 0);
+	std::size_t iR = line.find (m_mlComments [1], 0);
 
-	if (iL >= 0)
+	if (iL != std::string::npos)
 	{
 		// DEBUG:
 		//cout << "[" << lineIndex << "]" << " " << "MultiLine Comment begin found." << endl;
-		if ((iR >= (int) m_mlComments [1].length ()) && (iR != -1))
+		if ((iR >= m_mlComments [1].length ()) && (iR != std::string::npos))
 		{
 			//
 			// Singleline valid comment
@@ -45,7 +44,7 @@ MpLexer::skipComments (std::istream& f, std::string& line, long& lineIndex)
 				lineIndex ++;
 
 				iR = line.find (m_mlComments [1], 0);
-				if (iR >= 0)
+				if (iR != std::string::npos)
 				{
 					//
 					// Valid comment end
@@ -73,7 +72,7 @@ MpLexer::skipComments (std::istream& f, std::string& line, long& lineIndex)
 	// Is it line comment?
 	//
 	iL = line.find (m_slComments [0], 0);
-	if ( iL >= 0 )
+	if ( iL != std::string::npos )
 	{
 		// DEBUG:
 		//cout << "[" << lineIndex << "]" << " " << "SingleLine comment found." << endl;
@@ -119,7 +118,7 @@ MpLexer::isDelimiter (const std::string& _token, int& _index)
 }
 
 bool
-MpLexer::writeToTable (const std::string& _token, const long& _line_index)
+MpLexer::writeToTable (const std::string& _token, const std::size_t& _line_index)
 {
 	if (_token.empty ())
 		return false;
@@ -229,7 +228,7 @@ MpLexer::writeToTable (const std::string& _token, const long& _line_index)
 	//
 	// Else token is ID (table 4)
 	//
-	long n = _token.length ();
+	std::size_t n = _token.length ();
 
 	//
 	// Check token for errors
@@ -393,7 +392,7 @@ MpLexer::loadConfig (Poco::Util::LayeredConfiguration& _config)
 bool
 MpLexer::loadFile (const std::string& _name)
 {
-	long lineCounter = 0L, i = 0L;
+	std::size_t lineCounter = 0L, i = 0L;
 
 	try
 	{
@@ -619,7 +618,7 @@ MpLexer::saveLexemeFile (const std::string& _name) const
 }
 
 std::string
-MpLexer::getNextLexeme (long* _line_index)
+MpLexer::getNextLexeme (std::size_t* _line_index)
 {
 	if (m_bZeroIndex)
 	{
@@ -667,7 +666,7 @@ MpLexer::getNextLexeme (long* _line_index)
 }
 
 std::string
-MpLexer::getLexeme (const long _index) const
+MpLexer::getLexeme (const std::size_t _index) const
 {
 	if (_index >= MP_ARR_LEN)
 		return std::string ();
@@ -712,7 +711,7 @@ MpLexer::setToBegin ()
 	m_bZeroIndex = true;
 }
 
-unsigned int
+std::size_t
 MpLexer::getCurrentLexemeIndex () const
 {
 	return (m_curr_lexeme_idx - 1);

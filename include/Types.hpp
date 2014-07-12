@@ -74,6 +74,12 @@
 #endif // ! POCO_WIN32_UTF8 
 #endif
 
+#define MP_DISABLE_COPY(Class) \
+	Class(const Class &) = delete;\
+	Class &operator=(const Class &) = delete;
+
+#define MP_UNUSED_ARG(Arg)	(void)Arg;
+
 namespace MiniPascal
 {
 	struct MpVariable;

@@ -24,7 +24,7 @@ namespace MiniPascal
 	struct MpNumLexeme
 	{
 		int number;
-		int count;
+		std::size_t count;
 	};
 
 	//
@@ -33,7 +33,7 @@ namespace MiniPascal
 	struct MpIdLexeme
 	{
 		std::string id;
-		int    count;
+		std::size_t count;
 	};
 
 	//
@@ -41,9 +41,9 @@ namespace MiniPascal
 	//
 	struct MpIndexLexeme
 	{
-		int i;
-		int j;
-		int k;
+		std::size_t i;
+		std::size_t j;
+		std::size_t k;
 	};
 
 	//
@@ -162,7 +162,7 @@ namespace MiniPascal
 		/**
 	      * @brief Skip single-line and multi-line comments
 	      */
-		bool skipComments (std::istream& _f, std::string& _line, long& _line_index);
+		bool skipComments (std::istream& _f, std::string& _line, std::size_t& _line_index);
 
 		/**
 	      * @brief Check whether specified lexeme is a keyword
@@ -177,8 +177,9 @@ namespace MiniPascal
 		/**
 	      * @brief Find token type and write it to the proper table
 	      */
-		bool writeToTable (const std::string& _token, const long& _line_index);
+		bool writeToTable (const std::string& _token, const std::size_t& _line_index);
 
+		MP_DISABLE_COPY (MpLexer)
 	public:
 		explicit MpLexer (Poco::LogStream& _logstream);
 		~MpLexer ();
@@ -202,12 +203,12 @@ namespace MiniPascal
 		/**
 	      * @brief Return next lexeme in lexeme table or "", if EOF found
 	      */
-		std::string getNextLexeme (long* _line_index);
+		std::string getNextLexeme (std::size_t* _line_index);
 		
 		/**
 	  * @brief Return specified lexeme from lexeme table
 	  */
-		std::string getLexeme (const long _index) const;
+		std::string getLexeme (const std::size_t _index) const;
 		
 		/**
 	      * @brief Set current lexeme to program first.
@@ -217,7 +218,7 @@ namespace MiniPascal
 		/**
 	      * @brief Return current lexeme index
 	      */
-		size_t getCurrentLexemeIndex () const;
+		std::size_t getCurrentLexemeIndex () const;
 
 		/**
 	      * @brief Return specified keyword

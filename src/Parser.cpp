@@ -65,7 +65,7 @@ MpParser::P ()
 	//
 	// Code block
 	//
-	B (true);
+	B ();
 
 	//
 	// Check for "."
@@ -169,7 +169,7 @@ MpParser::D2 ()
 // В ::= begin S {;S} end
 //
 void
-MpParser::B (bool main)
+MpParser::B()
 {
 	INFO ("B");
 
@@ -284,7 +284,7 @@ MpParser::S ()
 	//
 	if (!Poco::UTF8::icompare (m_sCurrLexeme, m_lexer->getKeyword (KEYWORD_BEGIN)))
 	{
-		B (false);
+		B ();
 		return;
 	}
 

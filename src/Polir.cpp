@@ -213,7 +213,7 @@ MpPolir::convert (const std::string& lexeme)
 	if (!Poco::UTF8::icompare (l, m_lexer->getDelimiter (DELIM_PROGRAM_END)))
 		return;
 
-	long lineIndex = 0L;
+	std::size_t lineIndex = 0L;
 	if (type > 0)
 		l = m_lexer->getNextLexeme (&lineIndex);
 
@@ -221,7 +221,7 @@ MpPolir::convert (const std::string& lexeme)
 	{
 		case 1:                               // if E then S1 {else S2}
 		{
-			unsigned int p1 = 0, p1Index = 0;
+			std::size_t p1 = 0, p1Index = 0;
 
 			//convert (l);                      // E until then.
 			bool b;
@@ -278,7 +278,7 @@ MpPolir::convert (const std::string& lexeme)
 
 		case 2: // do S while E;
 		{
-			unsigned int p1;
+			std::size_t p1;
 			p1 = m_polirExpr.size ();
 
 			convert (l);                       // S until while or end.
